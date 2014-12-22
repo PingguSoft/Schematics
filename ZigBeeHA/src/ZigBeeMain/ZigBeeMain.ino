@@ -1,13 +1,12 @@
-#include <Servo.h> 
-#include <IRremote.h>
-#include <SoftwareSerial.h>
 
+#include <SoftwareSerial.h>
+#include <IRremote.h>
 const int RECV_PIN   = 5;
 const int BUTTON_PIN = 12;
 const int STATUS_PIN = 13;
 
 IRrecv  irrecv(RECV_PIN);
-IRsend  irsend;
+//IRsend  irsend;
 
 int     nCodeType   = -1;   // The type of code
 int     nToggle     = 0;    // The RC5/6 nToggle state
@@ -17,28 +16,42 @@ unsigned long   lCode; // The code value if not raw
 unsigned int    nRawCodes[RAWBUF]; // The durations if raw
 decode_results  results;
 
-Servo   servoLR;
+//Servo   servoLR;
 int     nPosLR = 0;
  
- 
-SoftwareSerial serialZigBee(2, 4);
+SoftwareSerial serialZigBee(2, 4); // RX, TX
  
 void setup() 
 { 
-    Serial.begin(9600);
-    
+  // Open serial communications and wait for port to open:
+  Serial.begin(115200);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for Leonardo only
+  }
+  serialZigBee.begin(115200);
+	
+ #if 0   
     servoLR.attach(9);
-    
     irrecv.enableIRIn();
     pinMode(BUTTON_PIN, INPUT);
     pinMode(STATUS_PIN, OUTPUT);
-
-    serialZigBee.begin(4800);
-    serialZigBee.println("Hello, world?");    
+#endif
 } 
 
 void loop() 
 { 
+  while (Serial.available() > 0) {
+    char inByte = Serial.read();
+//	Serial.write(inByte);
+    serialZigBee.write(inByte);
+  }
+  
+  while (serialZigBee.available() > 0) {
+    char inByte = serialZigBee.read();
+    Serial.write(inByte);
+  }  
+
+/*
     int pos;
     
     for(pos = 0; pos < 180; pos++) {
@@ -55,8 +68,10 @@ void loop()
         storeCode(&results);
         irrecv.resume(); // resume receiver
     }
+*/	
 }
 
+#if 0
 void storeCode(decode_results *results) {
     nCodeType = results->decode_type;
     int count = results->rawlen;
@@ -154,3 +169,4 @@ void sendCode(int repeat) {
         Serial.println("Sent raw");
     }
 }
+#endif
