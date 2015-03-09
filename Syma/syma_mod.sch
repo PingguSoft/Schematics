@@ -8300,8 +8300,8 @@ W = angled&lt;p&gt;
 <part name="D6" library="SparkFun" deviceset="LED" device="0603" value="STATUS LED"/>
 <part name="D7" library="SparkFun" deviceset="LED" device="0603" value="LIPO ALARM"/>
 <part name="D8" library="SparkFun" deviceset="LED" device="0603" value="POWER"/>
-<part name="R15" library="rcl" deviceset="R-US_" device="R0603" value="680K"/>
-<part name="R16" library="rcl" deviceset="R-US_" device="R0603" value="680K"/>
+<part name="R15" library="rcl" deviceset="R-US_" device="R0603" value="100"/>
+<part name="R16" library="rcl" deviceset="R-US_" device="R0603" value="1K"/>
 <part name="GND15" library="supply1" deviceset="GND" device=""/>
 <part name="SUPPLY5" library="supply2" deviceset="+5V" device="" value="Vbatt"/>
 <part name="SUPPLY2" library="supply2" deviceset="+5V" device="" value="Vbatt"/>
