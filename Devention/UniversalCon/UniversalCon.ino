@@ -19,6 +19,7 @@ void setup()
 
 extern void tmr2();
 extern void tmr3();
+extern void tmrStop();
 
 void loop()
 {
@@ -26,10 +27,14 @@ void loop()
     if (Serial.available() > 0) {
 		// read the incoming byte:
         incomingByte = Serial.read();
-		if (incomingByte == 'a')
+		if (incomingByte == 'a') {
+			tmrStop();
 			tmr2();
-		else if (incomingByte == 'b')
+		}
+		else if (incomingByte == 'b') {
+			tmrStop();
 			tmr3();
+		}
 	}
 }
 

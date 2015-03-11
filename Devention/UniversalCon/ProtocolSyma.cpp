@@ -488,7 +488,7 @@ static void tmrCallback(void)
     mTimer.after(time, tmrCallback);
 }
 
-int8_t hTmr2;
+int8_t hTmr2 = -1;
 s32 thr = CHAN_MIN_VALUE;
 
 void tmr2(void)
@@ -515,6 +515,12 @@ void tmr3(void)
 
     Protocol::injectControl(CH_THROTTLE, thr);
     hTmr2 = mTimer.after(1, tmr3);
+}
+
+void tmrStop()
+{
+  if (hTmr2 > 0)
+    mTimer.stop(hTmr2);
 }
 
 Timer ProtocolSyma::getTimer()
