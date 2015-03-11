@@ -2,31 +2,34 @@
 #include "common.h"
 #include "interface.h"
 #include "Timer.h"
-#include "ProtocolYD717.h"
+#include "ProtocolSyma.h"
 
-int pin = 13;
+ProtocolSyma proto;
+int incomingByte = 0;
 
-ProtocolYD717 proto;
-
-void setup() 
+void setup()
 {
-    Serial.begin(9600);
+    Serial.begin(57600);
     while (!Serial); // wait for serial port to connect. Needed for Leonardo only
 
-    pinMode(pin, OUTPUT);
-    proto.getTimer().oscillate(pin, 300, LOW);
-    //t.pulse(pin, 300, HIGH); 
-    
-    int tickEvent = proto.getTimer().every(2000, doSomething);
+    Serial.println("START!!!");
+
+    proto.init(0xb2c54a2ful);
 }
+
+extern void tmr2();
+extern void tmr3();
 
 void loop()
 {
     proto.update();
+    if (Serial.available() > 0) {
+		// read the incoming byte:
+        incomingByte = Serial.read();
+		if (incomingByte == 'a')
+			tmr2();
+		else if (incomingByte == 'b')
+			tmr3();
+	}
 }
 
-void doSomething()
-{
-    Serial.print("2 second tick: millis()=");
-    Serial.println(millis());
-}

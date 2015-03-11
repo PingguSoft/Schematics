@@ -17,31 +17,38 @@
 #define REUSE_TX_PL   0xE3
 #define NOP           0xFF
 
-#define PIN_CS        8
+#define PIN_IRQ       2
+#define PIN_CSN       8
 #define PIN_CE        7
 
 static u8 rf_setup;
 
-static void CS_HI() 
+static void CS_HI()
 {
-    digitalWrite(PIN_CS, HIGH);
+    digitalWrite(PIN_CSN, HIGH);
 }
 
-static void CS_LO() 
+static void CS_LO()
 {
-    digitalWrite(PIN_CS, LOW);
+    digitalWrite(PIN_CSN, LOW);
 }
 
 void NRF24L01_Initialize()
 {
-    pinMode(PIN_CS, OUTPUT);
+    pinMode(PIN_IRQ, INPUT);
+    pinMode(PIN_CSN, OUTPUT);
     pinMode(PIN_CE, OUTPUT);
-    digitalWrite(PIN_CS, HIGH);
+    digitalWrite(PIN_CSN, HIGH);
     digitalWrite(PIN_CE, HIGH);
+
+    SPI.begin();
+    SPI.setBitOrder(MSBFIRST);
     SPI.setDataMode(SPI_MODE0);
     SPI.setClockDivider(SPI_CLOCK_DIV2);
-    SPI.begin();
+
     rf_setup = 0x0F;
+    Serial.println("NRF24L01_Initialize");
+    digitalWrite(PIN_CE, HIGH);
 }
 
 #define PROTOSPI_xfer   SPI.transfer
@@ -112,7 +119,7 @@ u8 NRF24L01_ReadPayload(u8 *data, u8 length)
     return res;
 }
 
-static u8 Strobe(u8 state)
+u8 Strobe(u8 state)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(state);
@@ -152,7 +159,7 @@ u8 NRF24L01_SetBitrate(u8 bitrate)
 }
 
 // Power setting is 0..3 for nRF24L01
-// Claimed power amp for nRF24L01 from eBay is 20dBm. 
+// Claimed power amp for nRF24L01 from eBay is 20dBm.
 //      Raw            w 20dBm PA
 // 0 : -18dBm  (16uW)   2dBm (1.6mW)
 // 1 : -12dBm  (60uW)   8dBm   (6mW)
@@ -210,7 +217,7 @@ void NRF24L01_SetTxRxMode(enum TXRX_State mode)
         NRF24L01_WriteReg(NRF24L01_00_CONFIG, (1 << NRF24L01_00_EN_CRC)   // switch to TX mode
                                             | (1 << NRF24L01_00_CRCO)
                                             | (1 << NRF24L01_00_PWR_UP));
-        delayMicroseconds(130);
+        delayMicroseconds(150);
         CE_hi();
     } else if (mode == RX_EN) {
         CE_lo();
@@ -223,7 +230,7 @@ void NRF24L01_SetTxRxMode(enum TXRX_State mode)
                                             | (1 << NRF24L01_00_CRCO)
                                             | (1 << NRF24L01_00_PWR_UP)
                                             | (1 << NRF24L01_00_PRIM_RX));
-        delayMicroseconds(130);
+        delayMicroseconds(150);
         CE_hi();
     } else {
         NRF24L01_WriteReg(NRF24L01_00_CONFIG, (1 << NRF24L01_00_EN_CRC)); //PowerDown

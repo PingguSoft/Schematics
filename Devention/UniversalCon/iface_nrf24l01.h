@@ -73,7 +73,7 @@ enum {
     NRF24L01_BR_250K,
     NRF24L01_BR_RSVD
 };
-    
+
 
 void NRF24L01_Initialize();
 int NRF24L01_Reset();
@@ -87,7 +87,7 @@ u8 NRF24L01_ReadPayload(u8 *data, u8 len);
 u8 NRF24L01_FlushTx();
 u8 NRF24L01_FlushRx();
 u8 NRF24L01_Activate(u8 code);
-
+u8 Strobe(u8 state);
 
 // Bitrate 0 - 1Mbps, 1 - 2Mbps, 3 - 250K (for nRF24L01+)
 u8 NRF24L01_SetBitrate(u8 bitrate);

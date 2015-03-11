@@ -7,23 +7,53 @@
 
 #include "Protocol.h"
 
-Protocol::Protocol(TX_MOD_T module, PROTO_T protocol) 
+s32 Protocol::mIntChannels[MAX_CHANNEL];
+u8 Protocol::mByteTrims[MAX_TRIM];
+
+Protocol::Protocol(TX_MOD_T module, PROTO_T protocol)
 {
     mModule   = module;
     mProtocol = protocol;
+
+    memset(Protocol::mIntChannels, 0, sizeof(Protocol::mIntChannels));
+//    for (u8 i = 0; i < MAX_CHANNEL; i++)
+//      Protocol::mIntChannels[i] = -5000;
+    Protocol::mIntChannels[CH_THROTTLE] = CHAN_MIN_VALUE;
+
+    Protocol::mByteTrims[TRIM_RUDDER] = 0x0 >> 1;
+    Protocol::mByteTrims[TRIM_ELEVATOR] = 0x0 >> 1;
+    Protocol::mByteTrims[TRIM_AILERON] = 0x0 >> 1;
 }
 
-void Protocol::injectDir(u8 throttle, u8 rudder, u8 elevator, u8 aileron)
-{ 
-    mByteThrottle = throttle;
-    mByteRudder   = rudder;
-    mByteElevator = elevator;
-    mByteAileron  = aileron;
-}
-
-void Protocol::injectTrim(u8 rudder, u8 elevator, u8 aileron) 
+void Protocol::injectControl(CH_T ch, s32 val)
 {
-    mByteRudderTrim = rudder;
-    mByteElevatorTrim = elevator;
-    mByteAileronTrim = aileron;
+    mIntChannels[ch] = val;
 }
+
+void Protocol::injectControls(s32 *data, int size)
+{
+    for (int i = 0; i < size; i++)
+        mIntChannels[i] = *data++;
+}
+
+void Protocol::injectTrim(TRIM_T trim, u8 val)
+{
+    mByteTrims[trim] =  val;
+}
+
+void Protocol::injectTrims(u8 *data)
+{
+    for (int i = 0; i < MAX_TRIM; i++)
+        mByteTrims[i] = *data;
+}
+
+u32 Protocol::getControl(CH_T ch)
+{
+    return mIntChannels[ch];
+}
+
+u8 Protocol::getTrim(TRIM_T trim)
+{
+    return mByteTrims[trim];
+}
+
