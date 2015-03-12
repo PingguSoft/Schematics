@@ -1,5 +1,10 @@
-#ifndef _IFACE_NRF24L01_H_
-#define _IFACE_NRF24L01_H_
+#ifndef _DEVICE_NRF24L01_H_
+#define _DEVICE_NRF24L01_H_
+
+#include "Common.h"
+#include <stdio.h>
+#include <Arduino.h>
+#include <avr/pgmspace.h>
 
 // Register map
 enum {
@@ -75,29 +80,49 @@ enum {
 };
 
 
-void NRF24L01_Initialize();
-int NRF24L01_Reset();
-u8 NRF24L01_WriteReg(u8 reg, u8 data);
-u8 NRF24L01_WriteRegisterMulti(u8 reg, const u8 data[], u8 length);
-u8 NRF24L01_WritePayload(u8 *data, u8 len);
-u8 NRF24L01_ReadReg(u8 reg);
-u8 NRF24L01_ReadRegisterMulti(u8 reg, u8 data[], u8 length);
-u8 NRF24L01_ReadPayload(u8 *data, u8 len);
+enum TXRX_State {
+    TXRX_OFF,
+    TX_EN,
+    RX_EN,
+};
 
-u8 NRF24L01_FlushTx();
-u8 NRF24L01_FlushRx();
-u8 NRF24L01_Activate(u8 code);
-u8 Strobe(u8 state);
 
-// Bitrate 0 - 1Mbps, 1 - 2Mbps, 3 - 250K (for nRF24L01+)
-u8 NRF24L01_SetBitrate(u8 bitrate);
+class DeviceNRF24L01
+{
+#define PIN_IRQ       2
+#define PIN_CSN       8
+#define PIN_CE        7
 
-u8 NRF24L01_SetPower(u8 power);
-void NRF24L01_SetTxRxMode(enum TXRX_State);
-int NRF24L01_Reset();
+#define CS_HI() digitalWrite(PIN_CSN, HIGH);
+#define CS_LO() digitalWrite(PIN_CSN, LOW);
+#define CE_HI() digitalWrite(PIN_CE, HIGH);
+#define CE_LO() digitalWrite(PIN_CE, LOW);
+
+public:
+    void initialize();
+    int  reset();
+    u8   writeReg(u8 reg, u8 data);
+    u8   writeRegisterMulti(u8 reg, const u8 data[], u8 length);
+    u8   writePayload(u8 *data, u8 len);
+    u8   readReg(u8 reg);
+    u8   readRegisterMulti(u8 reg, u8 data[], u8 length);
+    u8   readPayload(u8 *data, u8 len);
+    u8   flushTx();
+    u8   flushRx();
+    u8   activate(u8 code);
+    // Bitrate 0 - 1Mbps, 1 - 2Mbps, 3 - 250K (for nRF24L01+)
+    u8   setBitrate(u8 bitrate);
+    u8   setPower(u8 power);
+    void setTxRxMode(enum TXRX_State);
 
 // To enable radio transmit after WritePayload you need to turn the radio
-//void NRF24L01_PulseCE();
+//void PulseCE();
 
+private:
+    u8   strobe(u8 state);
+
+// variables    
+    u8   mRFsetup;
+};
 
 #endif

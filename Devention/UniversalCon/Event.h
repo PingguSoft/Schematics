@@ -34,8 +34,8 @@ class Event
 
 public:
   Event(void);
-  void update(void);
-  void update(unsigned long now);
+  uint8_t update(void);
+  uint8_t update(unsigned long now);
   int8_t eventType;
   unsigned long period;
   int repeatCount;

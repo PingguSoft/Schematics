@@ -34,15 +34,16 @@ Event::Event(void)
 	eventType = EVENT_NONE;
 }
 
-void Event::update(void)
+uint8_t Event::update(void)
 {
     unsigned long now = millis();
-    update(now);
+    return update(now);
 }
 
-void Event::update(unsigned long now)
+uint8_t Event::update(unsigned long now)
 {
   unsigned long diff;
+  uint8_t ret = 0;
 
   if (now < lastEventTime)
   {
@@ -57,7 +58,9 @@ void Event::update(unsigned long now)
 		switch (eventType)
 		{
 			case EVENT_EVERY:
-				(*callback)();
+                if (callback)
+    				(*callback)();
+                ret = 1;
 				break;
 
 			case EVENT_OSCILLATE:
@@ -72,4 +75,6 @@ void Event::update(unsigned long now)
 	{
 		eventType = EVENT_NONE;
 	}
+
+    return ret;
 }

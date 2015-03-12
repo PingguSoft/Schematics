@@ -1,8 +1,6 @@
 #include <SPI.h>
-#include "common.h"
-#include "interface.h"
+#include "DeviceNRF24L01.h"
 
-#ifdef PROTO_HAS_NRF24L01
 /* Instruction Mnemonics */
 #define R_REGISTER    0x00
 #define W_REGISTER    0x20
@@ -17,28 +15,13 @@
 #define REUSE_TX_PL   0xE3
 #define NOP           0xFF
 
-#define PIN_IRQ       2
-#define PIN_CSN       8
-#define PIN_CE        7
-
-static u8 rf_setup;
-
-static void CS_HI()
-{
-    digitalWrite(PIN_CSN, HIGH);
-}
-
-static void CS_LO()
-{
-    digitalWrite(PIN_CSN, LOW);
-}
-
-void NRF24L01_Initialize()
+void DeviceNRF24L01::initialize()
 {
     pinMode(PIN_IRQ, INPUT);
     pinMode(PIN_CSN, OUTPUT);
     pinMode(PIN_CE, OUTPUT);
-    digitalWrite(PIN_CSN, HIGH);
+
+    CS_HI();
     digitalWrite(PIN_CE, HIGH);
 
     SPI.begin();
@@ -46,14 +29,14 @@ void NRF24L01_Initialize()
     SPI.setDataMode(SPI_MODE0);
     SPI.setClockDivider(SPI_CLOCK_DIV2);
 
-    rf_setup = 0x0F;
-    Serial.println("NRF24L01_Initialize");
+    mRFsetup = 0x0F;
+    Serial.println("Initialize");
     digitalWrite(PIN_CE, HIGH);
 }
 
 #define PROTOSPI_xfer   SPI.transfer
 
-u8 NRF24L01_WriteReg(u8 reg, u8 data)
+u8 DeviceNRF24L01::writeReg(u8 reg, u8 data)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(W_REGISTER | (REGISTER_MASK & reg));
@@ -62,7 +45,7 @@ u8 NRF24L01_WriteReg(u8 reg, u8 data)
     return res;
 }
 
-u8 NRF24L01_WriteRegisterMulti(u8 reg, const u8 data[], u8 length)
+u8 DeviceNRF24L01::writeRegisterMulti(u8 reg, const u8 data[], u8 length)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(W_REGISTER | ( REGISTER_MASK & reg));
@@ -74,7 +57,7 @@ u8 NRF24L01_WriteRegisterMulti(u8 reg, const u8 data[], u8 length)
     return res;
 }
 
-u8 NRF24L01_WritePayload(u8 *data, u8 length)
+u8 DeviceNRF24L01::writePayload(u8 *data, u8 length)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(W_TX_PAYLOAD);
@@ -86,7 +69,7 @@ u8 NRF24L01_WritePayload(u8 *data, u8 length)
     return res;
 }
 
-u8 NRF24L01_ReadReg(u8 reg)
+u8 DeviceNRF24L01::readReg(u8 reg)
 {
     CS_LO();
     PROTOSPI_xfer(R_REGISTER | (REGISTER_MASK & reg));
@@ -95,7 +78,7 @@ u8 NRF24L01_ReadReg(u8 reg)
     return data;
 }
 
-u8 NRF24L01_ReadRegisterMulti(u8 reg, u8 data[], u8 length)
+u8 DeviceNRF24L01::readRegisterMulti(u8 reg, u8 data[], u8 length)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(R_REGISTER | (REGISTER_MASK & reg));
@@ -107,7 +90,7 @@ u8 NRF24L01_ReadRegisterMulti(u8 reg, u8 data[], u8 length)
     return res;
 }
 
-u8 NRF24L01_ReadPayload(u8 *data, u8 length)
+u8 DeviceNRF24L01::readPayload(u8 *data, u8 length)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(R_RX_PAYLOAD);
@@ -119,7 +102,7 @@ u8 NRF24L01_ReadPayload(u8 *data, u8 length)
     return res;
 }
 
-u8 Strobe(u8 state)
+u8 DeviceNRF24L01::strobe(u8 state)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(state);
@@ -127,17 +110,17 @@ u8 Strobe(u8 state)
     return res;
 }
 
-u8 NRF24L01_FlushTx()
+u8 DeviceNRF24L01::flushTx()
 {
-    return Strobe(FLUSH_TX);
+    return strobe(FLUSH_TX);
 }
 
-u8 NRF24L01_FlushRx()
+u8 DeviceNRF24L01::flushRx()
 {
-    return Strobe(FLUSH_RX);
+    return strobe(FLUSH_RX);
 }
 
-u8 NRF24L01_Activate(u8 code)
+u8 DeviceNRF24L01::activate(u8 code)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(ACTIVATE);
@@ -146,7 +129,7 @@ u8 NRF24L01_Activate(u8 code)
     return res;
 }
 
-u8 NRF24L01_SetBitrate(u8 bitrate)
+u8 DeviceNRF24L01::setBitrate(u8 bitrate)
 {
     // Note that bitrate 250kbps (and bit RF_DR_LOW) is valid only
     // for nRF24L01+. There is no way to programmatically tell it from
@@ -154,8 +137,8 @@ u8 NRF24L01_SetBitrate(u8 bitrate)
     // by Nordic, so we assume that we deal with with modern version.
 
     // Bit 0 goes to RF_DR_HIGH, bit 1 - to RF_DR_LOW
-    rf_setup = (rf_setup & 0xD7) | ((bitrate & 0x02) << 4) | ((bitrate & 0x01) << 3);
-    return NRF24L01_WriteReg(NRF24L01_06_RF_SETUP, rf_setup);
+    mRFsetup = (mRFsetup & 0xD7) | ((bitrate & 0x02) << 4) | ((bitrate & 0x01) << 3);
+    return writeReg(NRF24L01_06_RF_SETUP, mRFsetup);
 }
 
 // Power setting is 0..3 for nRF24L01
@@ -176,7 +159,7 @@ TXPOWER_30mW   = 15dBm
 TXPOWER_100mW  = 20dBm
 TXPOWER_150mW  = 22dBm
 */
-u8 NRF24L01_SetPower(u8 power)
+u8 DeviceNRF24L01::setPower(u8 power)
 {
     u8 nrf_power = 0;
     switch(power) {
@@ -191,60 +174,48 @@ u8 NRF24L01_SetPower(u8 power)
         default:            nrf_power = 0; break;
     };
     // Power is in range 0..3 for nRF24L01
-    rf_setup = (rf_setup & 0xF9) | ((nrf_power & 0x03) << 1);
-    return NRF24L01_WriteReg(NRF24L01_06_RF_SETUP, rf_setup);
-}
-static void CE_lo()
-{
-#if HAS_MULTIMOD_SUPPORT
-    SPI_ConfigSwitch(0x0f, 0x0b);
-#endif
-}
-static void CE_hi()
-{
-#if HAS_MULTIMOD_SUPPORT
-    SPI_ConfigSwitch(0x1f, 0x1b);
-#endif
+    mRFsetup = (mRFsetup & 0xF9) | ((nrf_power & 0x03) << 1);
+    return writeReg(NRF24L01_06_RF_SETUP, mRFsetup);
 }
 
-void NRF24L01_SetTxRxMode(enum TXRX_State mode)
+void DeviceNRF24L01::setTxRxMode(enum TXRX_State mode)
 {
     if(mode == TX_EN) {
-        CE_lo();
-        NRF24L01_WriteReg(NRF24L01_07_STATUS, (1 << NRF24L01_07_RX_DR)    //reset the flag(s)
+        CE_LO();
+        writeReg(NRF24L01_07_STATUS, (1 << NRF24L01_07_RX_DR)    //reset the flag(s)
                                             | (1 << NRF24L01_07_TX_DS)
                                             | (1 << NRF24L01_07_MAX_RT));
-        NRF24L01_WriteReg(NRF24L01_00_CONFIG, (1 << NRF24L01_00_EN_CRC)   // switch to TX mode
+        writeReg(NRF24L01_00_CONFIG, (1 << NRF24L01_00_EN_CRC)   // switch to TX mode
                                             | (1 << NRF24L01_00_CRCO)
                                             | (1 << NRF24L01_00_PWR_UP));
         delayMicroseconds(150);
-        CE_hi();
+        CE_HI();
     } else if (mode == RX_EN) {
-        CE_lo();
-        NRF24L01_WriteReg(NRF24L01_07_STATUS, 0x70);        // reset the flag(s)
-        NRF24L01_WriteReg(NRF24L01_00_CONFIG, 0x0F);        // switch to RX mode
-        NRF24L01_WriteReg(NRF24L01_07_STATUS, (1 << NRF24L01_07_RX_DR)    //reset the flag(s)
+        CE_LO();
+        writeReg(NRF24L01_07_STATUS, 0x70);        // reset the flag(s)
+        writeReg(NRF24L01_00_CONFIG, 0x0F);        // switch to RX mode
+        writeReg(NRF24L01_07_STATUS, (1 << NRF24L01_07_RX_DR)    //reset the flag(s)
                                             | (1 << NRF24L01_07_TX_DS)
                                             | (1 << NRF24L01_07_MAX_RT));
-        NRF24L01_WriteReg(NRF24L01_00_CONFIG, (1 << NRF24L01_00_EN_CRC)   // switch to RX mode
+        writeReg(NRF24L01_00_CONFIG, (1 << NRF24L01_00_EN_CRC)   // switch to RX mode
                                             | (1 << NRF24L01_00_CRCO)
                                             | (1 << NRF24L01_00_PWR_UP)
                                             | (1 << NRF24L01_00_PRIM_RX));
         delayMicroseconds(150);
-        CE_hi();
+        CE_HI();
     } else {
-        NRF24L01_WriteReg(NRF24L01_00_CONFIG, (1 << NRF24L01_00_EN_CRC)); //PowerDown
-        CE_lo();
+        writeReg(NRF24L01_00_CONFIG, (1 << NRF24L01_00_EN_CRC)); //PowerDown
+        CE_LO();
     }
 }
 
-int NRF24L01_Reset()
+int DeviceNRF24L01::reset()
 {
-    NRF24L01_FlushTx();
-    NRF24L01_FlushRx();
-    u8 status1 = Strobe(NOP);
-    u8 status2 = NRF24L01_ReadReg(0x07);
-    NRF24L01_SetTxRxMode(TXRX_OFF);
+    flushTx();
+    flushRx();
+    u8 status1 = strobe(NOP);
+    u8 status2 = readReg(0x07);
+    setTxRxMode(TXRX_OFF);
     return (status1 == status2 && (status1 & 0x0f) == 0x0e);
 }
-#endif // defined(PROTO_HAS_NRF24L01)
+

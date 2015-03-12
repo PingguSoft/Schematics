@@ -4,18 +4,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 //Magic macro to check enum size
 //#define ctassert(n,e) extern unsigned char n[(e)?0:-1]
 #define ctassert(COND,MSG) typedef char static_assertion_##MSG[(COND)?1:-1]
-
-
-#define TEMPSTRINGLENGTH 400 //This is the max dialog size (80 characters * 5 lines)
-                             //We could reduce this to ~240 on the 128x64 screens
-                             //But only after all sprintf are replaced with snprintf
-                             //Maybe move this to target_defs.h
-extern char tempstring[TEMPSTRINGLENGTH];
-
 
 typedef int8_t s8;
 typedef int16_t s16;
@@ -24,6 +17,10 @@ typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
+
+#ifndef NULL
+#define NULL    0
+#endif
 
 enum TxPower {
     TXPOWER_100uW,

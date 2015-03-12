@@ -47,6 +47,16 @@ int8_t Timer::every(unsigned long period, void (*callback)(), int repeatCount)
 	return i;
 }
 
+int8_t Timer::every(unsigned long period)
+{
+ 	return every(period, NULL, -1); // - means forever
+}
+
+int8_t Timer::every(unsigned long period, int repeatCount)
+{
+ 	return every(period, NULL, repeatCount);
+}
+
 int8_t Timer::every(unsigned long period, void (*callback)())
 {
 	return every(period, callback, -1); // - means forever
@@ -55,6 +65,11 @@ int8_t Timer::every(unsigned long period, void (*callback)())
 int8_t Timer::after(unsigned long period, void (*callback)())
 {
 	return every(period, callback, 1);
+}
+
+int8_t Timer::after(unsigned long period)
+{
+	return every(period, NULL, 1);
 }
 
 int8_t Timer::oscillate(uint8_t pin, unsigned long period, uint8_t startingValue, int repeatCount)
@@ -121,10 +136,12 @@ void Timer::update(unsigned long now)
 	{
 		if (_events[i].eventType != EVENT_NONE)
 		{
-			_events[i].update(now);
+			if (_events[i].update(now))
+                handleTimer(i);
 		}
 	}
 }
+
 int8_t Timer::findFreeEventIndex(void)
 {
 	for (int8_t i = 0; i < MAX_NUMBER_OF_EVENTS; i++)
