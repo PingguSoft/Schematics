@@ -132,17 +132,16 @@ void ProtocolYD717::initRxTxAddr(void)
 {
     u32 lfsr = getDevID();
 
-    printf(F("ID:%08lx\n"), lfsr);
-    
     // Pump zero bytes for LFSR to diverge more
     for (u8 i = 0; i < sizeof(lfsr); ++i)
       rand32_r(&lfsr, 0);
 
     mRxTxAddrBuf[4] = 0xC1;
-    for (s8 i = sizeof(mRxTxAddrBuf) - 2; i >= 0; i--) {
+    for (u8 i = 0; i < sizeof(mRxTxAddrBuf)-1; ++i) {
         mRxTxAddrBuf[i] = lfsr & 0xff;
-        lfsr >>= 8;
+        rand32_r(&lfsr, i);
     }
+    printf(F("ID:%08lx\n"), lfsr);    
 }
 
 void ProtocolYD717::init1(void)
