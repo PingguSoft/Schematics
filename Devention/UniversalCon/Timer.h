@@ -26,7 +26,7 @@
 #include <inttypes.h>
 #include "Event.h"
 
-#define MAX_NUMBER_OF_EVENTS (8)
+#define MAX_NUMBER_OF_EVENTS (4)
 
 #define TIMER_NOT_AN_EVENT (-2)
 #define NO_TIMER_AVAILABLE (-1)
@@ -64,7 +64,7 @@ public:
   void update(void);
   void update(unsigned long now);
 
-  virtual void handleTimer(int8_t id) = 0;
+  virtual void handleTimer(int8_t id) {};
 
 protected:
   Event _events[MAX_NUMBER_OF_EVENTS];

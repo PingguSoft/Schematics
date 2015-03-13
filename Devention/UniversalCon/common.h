@@ -22,6 +22,14 @@ typedef uint64_t u64;
 #define NULL    0
 #endif
 
+#ifndef TRUE
+#define TRUE    1
+#endif
+
+#ifndef FALSE
+#define FALSE   0
+#endif
+
 enum TxPower {
     TXPOWER_100uW,
     TXPOWER_300uW,
@@ -33,9 +41,5 @@ enum TxPower {
     TXPOWER_150mW,
     TXPOWER_LAST,
 };
-
-#define MODULE_CALLTYPE
-  
-#define PROTO_HAS_NRF24L01
 
 #endif

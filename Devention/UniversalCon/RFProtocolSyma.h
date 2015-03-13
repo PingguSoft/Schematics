@@ -2,10 +2,10 @@
 #define ProtocolSyma_h
 
 #include "DeviceNRF24L01.h"
-#include "Protocol.h"
+#include "RFProtocol.h"
 #include "Timer.h"
 
-class ProtocolSyma : public Protocol, public Timer
+class RFProtocolSyma : public RFProtocol, public Timer
 {
 #define PAYLOADSIZE         10  // receive data pipes set to this size, but unused
 #define MAX_PACKET_SIZE     16  // X11,X12,X5C-1 10-byte, X5C 16-byte
@@ -34,8 +34,9 @@ enum {
 };
 
 public:
-    ProtocolSyma():Protocol(TX_MOD_NRF24L01, PROTO_SymaX) { }
-    ~ProtocolSyma() { close(); }
+    RFProtocolSyma():RFProtocol(RFProtocol::TX_NRF24L01, RFProtocol::PROTO_NRF24L01_SYMAX) { }
+    RFProtocolSyma(u32 id):RFProtocol(id) { }
+    ~RFProtocolSyma() { close(); }
     
 // for timer
     virtual void handleTimer(s8 id);
@@ -47,6 +48,7 @@ public:
     virtual int  reset(void);
     virtual int  getChannels(void);
     virtual int  setPower(int power);
+    virtual int  getInfo(s8 id, u8 *data, u8 *size);
     virtual void test(s8 id);
 
 private:
@@ -62,9 +64,7 @@ private:
     void init3(void);
     void setRFChannel(u8 address);
     u16  callState(void);
-    
-    void testUp(void);
-    void testDown(void);
+
 
 // variables
     DeviceNRF24L01  mDev;
@@ -80,13 +80,8 @@ private:
     u8   mAuxFlag;
     u8   mRxTxAddrBuf[5];
     u8   mState;
-
     s8   mTmrState;
-    s8   mTmrTest;
-    s8   mTmrTest2;
-    u8   mMode;
-    s32  mThr;
-
+    
 protected:
 
 };

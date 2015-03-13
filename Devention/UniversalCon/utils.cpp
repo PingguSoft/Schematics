@@ -37,7 +37,7 @@ void printf(char *fmt, ... )
     va_start (args, fmt );
     vsnprintf(buf, 128, fmt, args);
     va_end (args);
-    Serial.print(buf);
+//    Serial.print(buf);
 }
 
 void printf(const __FlashStringHelper *fmt, ... )
@@ -51,5 +51,5 @@ void printf(const __FlashStringHelper *fmt, ... )
     vsnprintf(buf, sizeof(buf), (const char *)fmt, args); // for the rest of the world
 #endif
     va_end(args);
-    Serial.print(buf);
+//    Serial.print(buf);
 }

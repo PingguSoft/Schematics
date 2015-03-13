@@ -30,7 +30,6 @@ void DeviceNRF24L01::initialize()
     SPI.setClockDivider(SPI_CLOCK_DIV2);
 
     mRFsetup = 0x0F;
-    Serial.println("Initialize");
     digitalWrite(PIN_CE, HIGH);
 }
 

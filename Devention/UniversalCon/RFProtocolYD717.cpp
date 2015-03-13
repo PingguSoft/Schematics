@@ -1,9 +1,9 @@
 #include <SPI.h>
-#include "ProtocolYD717.h"
+#include "RFProtocolYD717.h"
 #include "utils.h"
 
 
-u8 ProtocolYD717::checkStatus()
+u8 RFProtocolYD717::checkStatus()
 {
     u8 stat = mDev.readReg(NRF24L01_07_STATUS);
 
@@ -19,9 +19,9 @@ u8 ProtocolYD717::checkStatus()
     return PKT_PENDING;
 }
 
-u8 ProtocolYD717::getControl(CH_T id)
+u8 RFProtocolYD717::getControl(CH_T id)
 {
-    s32 ch = Protocol::getControl(id);
+    s32 ch = RFProtocol::getControl(id);
     if (ch < CHAN_MIN_VALUE) {
         ch = CHAN_MIN_VALUE;
     } else if (ch > CHAN_MAX_VALUE) {
@@ -32,17 +32,17 @@ u8 ProtocolYD717::getControl(CH_T id)
     return ret;
 }
 
-void ProtocolYD717::getControls(u8* throttle, u8* rudder, u8* elevator, u8* aileron,
+void RFProtocolYD717::getControls(u8* throttle, u8* rudder, u8* elevator, u8* aileron,
                           u8* flags, u8* rudder_trim, u8* elevator_trim, u8* aileron_trim)
 {
-    // Protocol is registered AETRF, that is
+    // RFProtocol is registered AETRF, that is
     // Aileron is channel 1, Elevator - 2, Throttle - 3, Rudder - 4, Flip control - 5
 
     // Channel 3
     *throttle = getControl(CH_THROTTLE);
 
     // Channel 4
-    if(mProtoOpt == FORMAT_XINXUN) {
+    if(getProtoOpt() == FORMAT_XINXUN) {
       *rudder = getControl(CH_RUDDER);
       *rudder_trim = (0xff - *rudder) >> 1;
     } else {
@@ -76,7 +76,7 @@ void ProtocolYD717::getControls(u8* throttle, u8* rudder, u8* elevator, u8* aile
 //            *rudder, *rudder_trim, *flags);
 }
 
-void ProtocolYD717::sendPacket(u8 bind)
+void RFProtocolYD717::sendPacket(u8 bind)
 {
     if (bind) {
         mPacketBuf[0]= mRxTxAddrBuf[0]; // send data phase address in first 4 bytes
@@ -85,10 +85,10 @@ void ProtocolYD717::sendPacket(u8 bind)
         mPacketBuf[3]= mRxTxAddrBuf[3];
         mPacketBuf[4] = 0x56;
         mPacketBuf[5] = 0xAA;
-        mPacketBuf[6] = (mProtoOpt == FORMAT_NI_HUI) ? 0x00 : 0x32;
+        mPacketBuf[6] = (getProtoOpt() == FORMAT_NI_HUI) ? 0x00 : 0x32;
         mPacketBuf[7] = 0x00;
     } else {
-        if (mProtoOpt == FORMAT_YD717)
+        if (getProtoOpt() == FORMAT_YD717)
             getControls(&mPacketBuf[0], &mPacketBuf[1], &mPacketBuf[3], &mPacketBuf[4], &mPacketBuf[7], &mPacketBuf[6], &mPacketBuf[2], &mPacketBuf[5]);
         else
             getControls(&mPacketBuf[0], &mPacketBuf[1], &mPacketBuf[3], &mPacketBuf[4], &mPacketBuf[7], &mPacketBuf[2], &mPacketBuf[5], &mPacketBuf[6]);
@@ -97,7 +97,7 @@ void ProtocolYD717::sendPacket(u8 bind)
     // clear mPacketBuf status bits and TX FIFO
     mDev.writeReg(NRF24L01_07_STATUS, (BV(NRF24L01_07_TX_DS) | BV(NRF24L01_07_MAX_RT)));
 
-    if(mProtoOpt == FORMAT_YD717) {
+    if(getProtoOpt() == FORMAT_YD717) {
         mDev.writePayload(mPacketBuf, 8);
     } else {
         mPacketBuf[8] = mPacketBuf[0];  // checksum
@@ -128,9 +128,9 @@ void ProtocolYD717::sendPacket(u8 bind)
 }
 
 
-void ProtocolYD717::initRxTxAddr(void)
+void RFProtocolYD717::initRxTxAddr(void)
 {
-    u32 lfsr = getDevID();
+    u32 lfsr = getControllerID();
 
     // Pump zero bytes for LFSR to diverge more
     for (u8 i = 0; i < sizeof(lfsr); ++i)
@@ -144,7 +144,7 @@ void ProtocolYD717::initRxTxAddr(void)
     printf(F("ID:%08lx\n"), lfsr);    
 }
 
-void ProtocolYD717::init1(void)
+void RFProtocolYD717::init1(void)
 {
     mDev.initialize();
 
@@ -186,14 +186,14 @@ void ProtocolYD717::init1(void)
     printf(F("init1 : %ld\n"), millis());
 }
 
-void ProtocolYD717::init2(void)
+void RFProtocolYD717::init2(void)
 {
     // for bind packets set address to prearranged value known to receiver
     u8 bind_rx_tx_addr[5];
     
-    if (mProtoOpt == FORMAT_SYMA_X4)
+    if (getProtoOpt() == FORMAT_SYMA_X4)
         for(u8 i=0; i < 5; i++) bind_rx_tx_addr[i]  = 0x60;
-    else if (mProtoOpt == FORMAT_NI_HUI)
+    else if (getProtoOpt() == FORMAT_NI_HUI)
         for(u8 i=0; i < 5; i++) bind_rx_tx_addr[i]  = 0x64;
     else
         for(u8 i=0; i < 5; i++) bind_rx_tx_addr[i]  = 0x65;
@@ -203,7 +203,7 @@ void ProtocolYD717::init2(void)
     printf(F("init2 : %ld\n"), millis());
 }
 
-void ProtocolYD717::init3(void)
+void RFProtocolYD717::init3(void)
 {
     // set rx/tx address for data phase
     mDev.writeRegisterMulti(NRF24L01_0A_RX_ADDR_P0, mRxTxAddrBuf, 5);
@@ -212,7 +212,7 @@ void ProtocolYD717::init3(void)
 }
 
 #ifdef YD717_TELEMETRY
-void ProtocolYD717::updateTelemetry(void) {
+void RFProtocolYD717::updateTelemetry(void) {
   static u8 frameloss = 0;
 
   frameloss += mDev.ReadReg(NRF24L01_08_OBSERVE_TX) >> 4;
@@ -220,7 +220,7 @@ void ProtocolYD717::updateTelemetry(void) {
 }
 #endif
 
-u16 ProtocolYD717::callState(void)
+u16 RFProtocolYD717::callState(void)
 {
     switch (mState) {
     case YD717_INIT1:
@@ -273,108 +273,76 @@ u16 ProtocolYD717::callState(void)
     return PACKET_PERIOD_MS;
 }
 
-void ProtocolYD717::test(s8 id)
+void RFProtocolYD717::test(s8 id)
 {
-    mMode = id;
-
-    if (mTmrTest > 0) {
-        stop(mTmrTest);
-        mTmrTest = -1;
-    }
-    
-    printf(F("test : %d\n"), id);
-    if (mMode == 1)
-        testUp();
-    else if (mMode == 2)
-        testDown();
 }
 
-void ProtocolYD717::testUp(void)
-{
-    if (mThr < CHAN_MAX_VALUE)
-      mThr += 5;
-    else {
-      printf(F("testUp done !!!\n"));
-      return;
-    }
-
-    Protocol::injectControl(CH_THROTTLE, mThr);
-    mTmrTest = after(1);
-}
-
-void ProtocolYD717::testDown(void)
-{
-    if (mThr > CHAN_MIN_VALUE)
-      mThr -= 5;
-    else {
-      printf(F("testDown done !!!\n"));
-      return;
-    }
-
-    Protocol::injectControl(CH_THROTTLE, mThr);
-    mTmrTest = after(1);
-}
-
-void ProtocolYD717::handleTimer(s8 id)
+void RFProtocolYD717::handleTimer(s8 id)
 {
     if (id == mTmrState) {
         u16 time = callState();
         mTmrState = after(time);
-    } else if (id == mTmrTest) {
-        if (mMode == 1)
-            testUp();
-        else if (mMode == 2)
-            testDown();
-    } else if (id == mTmrTest2) {
-        printf(F("Heart beat %ld\n"), millis());
     }
 }
 
-void ProtocolYD717::loop(void)
+void RFProtocolYD717::loop(void)
 {
     update();
 }
 
-int ProtocolYD717::init(void)
+int RFProtocolYD717::init(void)
 {
-    mProtoOpt  = FORMAT_YD717;
     mPacketCtr = 0;
     mAuxFlag   = 0;
     mTmrState  = -1;
-    mTmrTest   = -1;
-    mMode      = -1;
-    mThr       = CHAN_MIN_VALUE;
 
     initRxTxAddr();
     init1();
     mState = YD717_INIT1;
 
     mTmrState = after(INITIAL_WAIT_MS);
-    printf(F("init : %ld\n"), millis());
-    mTmrTest2 = every(1000);
     return 0;
 }
 
-int ProtocolYD717::close(void)
+int RFProtocolYD717::close(void)
 {
     //printf(F("%08ld : %s\n"), millis(), __PRETTY_FUNCTION__);
     mDev.initialize();
     return (mDev.reset() ? 1L : -1L);
 }
 
-int ProtocolYD717::reset(void)
+int RFProtocolYD717::reset(void)
 {
     return close();
 }
 
-int ProtocolYD717::getChannels(void)
+int RFProtocolYD717::getChannels(void)
 {
     return 6;
 }
 
-int ProtocolYD717::setPower(int power)
+int RFProtocolYD717::setPower(int power)
 {
     mDev.setPower(power);
     return 0;
 }
 
+int RFProtocolYD717::getInfo(s8 id, u8 *data, u8 *size)
+{
+    switch (id) {
+        case INFO_STATE:
+            *data = mState;
+            *size = 1;
+            break;
+
+        case INFO_CHANNEL:
+            *data = RF_CHANNEL;
+            *size = 1;
+            break;
+
+        case INFO_PACKET_CTR:
+            *size = sizeof(mPacketCtr);
+            memcpy(data, &mPacketCtr, *size);
+            break;
+    }
+}

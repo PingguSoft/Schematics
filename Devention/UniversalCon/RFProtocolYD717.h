@@ -2,11 +2,11 @@
 #define _PROTOCOL_YD717_
 
 #include "DeviceNRF24L01.h"
-#include "Protocol.h"
+#include "RFProtocol.h"
 #include "Timer.h"
 
 
-class ProtocolYD717 : public Protocol, public Timer
+class RFProtocolYD717 : public RFProtocol, public Timer
 {
 #define PAYLOADSIZE          8  // receive data pipes set to this size, but unused
 #define MAX_PACKET_SIZE      9  // YD717 packets have 8-byte payload, Syma X4 is 9
@@ -44,8 +44,9 @@ enum {
 };
 
 public:
-    ProtocolYD717():Protocol(TX_MOD_NRF24L01, PROTO_YD717) { }
-    ~ProtocolYD717() { close(); }
+    RFProtocolYD717():RFProtocol(RFProtocol::TX_NRF24L01, RFProtocol::PROTO_NRF24L01_YD717) { }
+    RFProtocolYD717(u32 id):RFProtocol(id) { }
+    ~RFProtocolYD717() { close(); }
 
 // for timer
     virtual void handleTimer(s8 id);
@@ -57,6 +58,7 @@ public:
     virtual int  reset(void);
     virtual int  getChannels(void);
     virtual int  setPower(int power);
+    virtual int  getInfo(s8 id, u8 *data, u8 *size);
     virtual void test(s8 id);
 
 private:
@@ -88,12 +90,7 @@ private:
     u8   mAuxFlag;
     u8   mRxTxAddrBuf[5];
     u8   mState;
-
     s8   mTmrState;
-    s8   mTmrTest;
-    s8   mTmrTest2;
-    u8   mMode;
-    s32  mThr;
 
 protected:
 

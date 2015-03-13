@@ -5,22 +5,89 @@
 
 #include "common.h"
 #include "utils.h"
-#include "ProtocolSyma.h"
-#include "ProtocolYD717.h"
+#include "RFProtocolSyma.h"
+#include "RFProtocolYD717.h"
+#include "SerialProtocol.h"
 
-Protocol *proto = new ProtocolSyma();
-int incomingByte = 0;
+SerialProtocol  mSerial;
+RFProtocol      *mRFProto = NULL;
+
+
+u32 serialCallback(u8 cmd, u8 *data, u8 size)
+{
+    u32 id;
+    u8  ret = 0;
+
+    switch (cmd) {
+        case SerialProtocol::CMD_SET_RFPROTOCOL:
+            if (mRFProto) {
+                delete mRFProto;
+                mRFProto = NULL;
+            }
+            memcpy(&id, data, sizeof(id));
+            if (RFProtocol::getModule(id) == RFProtocol::TX_NRF24L01) {
+                switch (RFProtocol::getProtocol(id)) {
+                    case RFProtocol::PROTO_NRF24L01_SYMAX:
+                        mRFProto = new RFProtocolSyma(id);
+                        ret = 1;
+                        break;
+
+                    case RFProtocol::PROTO_NRF24L01_YD717:
+                        mRFProto = new RFProtocolYD717(id);
+                        ret = 1;
+                        break;
+                }
+            }
+            mSerial.sendResponse(true, cmd, &id, 4);
+            break;
+
+        case SerialProtocol::CMD_START_RF:
+            memcpy(&id, data, sizeof(id));
+            if (mRFProto) {
+                mRFProto->setControllerID(id);
+                mRFProto->init();
+                ret = 1;
+            } 
+            mSerial.sendResponse(true, cmd, &ret, 1);
+            break;
+
+        case SerialProtocol::CMD_STOP_RF:
+            if (mRFProto) {
+                mRFProto->close();
+                delete mRFProto;
+                mRFProto = NULL;
+                ret = 1;
+            }
+            mSerial.sendResponse(true, cmd, &ret, 1);
+            break;
+
+        case SerialProtocol::CMD_INJECT_CONTROLS:
+            if (mRFProto) {
+                mRFProto->injectControls((s16*)data, size >> 1);
+                ret = 1;
+            }
+            mSerial.sendResponse(true, cmd, &ret, 1);
+            break;
+
+        case SerialProtocol::CMD_GET_INFO:
+            u8 buf[5];
+            u8 size = 0;
+
+            buf[0] = *data;
+            if (mRFProto) {
+                mRFProto->getInfo(*data, &buf[1], &size);
+            }
+            mSerial.sendResponse(true, cmd, buf, size + 1);
+            break;
+    }
+}
 
 void setup()
 {
     Serial.begin(57600);
-    while (!Serial); // wait for serial port to connect. Needed for Leonardo only
+    while (!Serial);
 
-    printf(F("START!!!\n"));
-    printf(F("freeRAM : %d\n"), freeRam());
-
-    proto->setDevID(0xb2c54a2ful);
-    proto->init();
+    mSerial.setCallback(serialCallback);
 }
 
 int freeRam() {
@@ -31,46 +98,9 @@ int freeRam() {
 
 void loop()
 {
-    if (proto)
-        proto->loop();
-
-    if (Serial.available() > 0) {
-        // read the incoming byte:
-        incomingByte = Serial.read();
-        switch (incomingByte) {
-        case 'a':
-            proto->test(1);
-            break;
-
-        case 'b':
-            proto->test(2);
-            break;
-
-        case 'c':
-            printf(F("freeRAM : %d\n"), freeRam());
-            break;
-
-        case 'z':
-            if (proto)
-                delete proto;
-            proto = new ProtocolSyma();
-            proto->init();
-            break;
-
-        case 'x':
-            if (proto)
-                delete proto;
-            proto = new ProtocolYD717();
-            proto->init();
-            break;
-
-        case 'q':
-            if (proto) {
-                delete proto;
-                proto = NULL;
-            }
-            break;
-        }
-    }
+    mSerial.handleRX();
+   
+    if (mRFProto)
+        mRFProto->loop();
 }
 
