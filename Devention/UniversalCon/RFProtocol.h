@@ -7,8 +7,8 @@
 class RFProtocol
 {
 public:
-    #define CHAN_MAX_VALUE -500
-    #define CHAN_MIN_VALUE 500
+    #define CHAN_MAX_VALUE 500
+    #define CHAN_MIN_VALUE -500
 
     typedef enum {
         TX_NRF24L01,
@@ -26,7 +26,7 @@ public:
 
     typedef enum {
         PROTO_A7105_FLYSKY,
-        PROTO_A7105_HUBSAN,    
+        PROTO_A7105_HUBSAN,
     } PROTO_A7105_T;
 
     typedef enum {
@@ -68,7 +68,7 @@ public:
     static u8    getProtocol(u32 id){ return (id >> 8) & 0xff;  }
     static u8    getOption(u32 id)  { return id & 0xff;         }
 
-    
+
     RFProtocol(u32 id);
     RFProtocol(u8 module, u8 proto);
     virtual ~RFProtocol()           { }
@@ -81,7 +81,7 @@ public:
     void injectControl(u8 ch, s16 val);
     void injectControls(s16 *data, int size);
     s16  getControl(u8 ch);
-    
+
     void injectTrim(u8 trim, u8 val);
     void injectTrims(u8 *data);
     u8   getTrim(u8 trim);
@@ -97,7 +97,7 @@ public:
 
 private:
     void initVars();
-    
+
     s16  mBufControls[MAX_CHANNEL];
     u8   mBufTrims[MAX_TRIM];
     u32  mProtoID;

@@ -2,7 +2,6 @@
 #define _COMMON_H_
 
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
 

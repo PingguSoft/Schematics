@@ -2,7 +2,6 @@
 #define _DEVICE_NRF24L01_H_
 
 #include "Common.h"
-#include <stdio.h>
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 
@@ -121,7 +120,7 @@ public:
 private:
     u8   strobe(u8 state);
 
-// variables    
+// variables
     u8   mRFsetup;
 };
 

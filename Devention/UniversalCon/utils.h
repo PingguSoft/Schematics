@@ -1,6 +1,5 @@
 #ifndef Utils_h
 #define Utils_h
-#include <stdio.h>
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 #include "Common.h"

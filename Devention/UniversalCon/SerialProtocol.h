@@ -4,11 +4,11 @@
 #include "Common.h"
 #include "utils.h"
 
-#define MAX_RX_BUF  32
+#define MAX_PACKET_SIZE 32
 
 class SerialProtocol
 {
-    
+
 public:
     typedef enum {
         CMD_READY,
@@ -23,6 +23,7 @@ public:
     SerialProtocol();
     ~SerialProtocol();
 
+    void begin(u32 baud);
     void handleRX(void);
     void sendResponse(bool ok, u8 cmd, u8 *data, u8 size);
     void evalCommand(u8 cmd, u8 *data, u8 size);
@@ -39,11 +40,11 @@ private:
         STATE_HEADER_SIZE,
         STATE_HEADER_CMD
     } STATE_T;
-    // 
+    //
 
     // variables
-    u8 mRxBuf[MAX_RX_BUF];
-    
+    u8   mRxPacket[MAX_PACKET_SIZE];
+
     u8   mState;
     u8   mOffset;
     u8   mDataSize;

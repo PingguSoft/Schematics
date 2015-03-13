@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 #include <SPI.h>
@@ -12,7 +11,6 @@
 SerialProtocol  mSerial;
 RFProtocol      *mRFProto = NULL;
 
-
 u32 serialCallback(u8 cmd, u8 *data, u8 size)
 {
     u32 id;
@@ -24,7 +22,7 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
                 delete mRFProto;
                 mRFProto = NULL;
             }
-            memcpy(&id, data, sizeof(id));
+            id = *(u32*)data;
             if (RFProtocol::getModule(id) == RFProtocol::TX_NRF24L01) {
                 switch (RFProtocol::getProtocol(id)) {
                     case RFProtocol::PROTO_NRF24L01_SYMAX:
@@ -38,17 +36,17 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
                         break;
                 }
             }
-            mSerial.sendResponse(true, cmd, &id, 4);
+            mSerial.sendResponse(true, cmd, (u8*)&ret, sizeof(ret));
             break;
 
         case SerialProtocol::CMD_START_RF:
-            memcpy(&id, data, sizeof(id));
+            id = *(u32*)data;
             if (mRFProto) {
                 mRFProto->setControllerID(id);
                 mRFProto->init();
                 ret = 1;
-            } 
-            mSerial.sendResponse(true, cmd, &ret, 1);
+            }
+            mSerial.sendResponse(true, cmd, (u8*)&ret, sizeof(ret));
             break;
 
         case SerialProtocol::CMD_STOP_RF:
@@ -58,7 +56,7 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
                 mRFProto = NULL;
                 ret = 1;
             }
-            mSerial.sendResponse(true, cmd, &ret, 1);
+            mSerial.sendResponse(true, cmd, (u8*)&ret, sizeof(ret));
             break;
 
         case SerialProtocol::CMD_INJECT_CONTROLS:
@@ -66,7 +64,7 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
                 mRFProto->injectControls((s16*)data, size >> 1);
                 ret = 1;
             }
-            mSerial.sendResponse(true, cmd, &ret, 1);
+            mSerial.sendResponse(true, cmd, (u8*)&ret, sizeof(ret));
             break;
 
         case SerialProtocol::CMD_GET_INFO:
@@ -84,22 +82,19 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
 
 void setup()
 {
-    Serial.begin(57600);
-    while (!Serial);
-
+	mSerial.begin(57600);
     mSerial.setCallback(serialCallback);
 }
 
 int freeRam() {
-    extern int __heap_start, *__brkval; 
-    int v; 
-    return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
+    extern int __heap_start, *__brkval;
+    int v;
+    return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
 void loop()
 {
     mSerial.handleRX();
-   
     if (mRFProto)
         mRFProto->loop();
 }

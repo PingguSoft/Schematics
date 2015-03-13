@@ -269,7 +269,7 @@ void RFProtocolSyma::init1(void)
 
 
 // write a strange first mPacketBuf to RF channel 8 ...
-const PROGMEM u8 first_packet[]   = { 0xf9, 0x96, 0x82, 0x1b, 0x20, 0x08, 0x08, 0xf2, 
+const PROGMEM u8 first_packet[]   = { 0xf9, 0x96, 0x82, 0x1b, 0x20, 0x08, 0x08, 0xf2,
                                       0x7d, 0xef, 0xff, 0x00, 0x00, 0x00, 0x00 };
 const PROGMEM u8 chans_bind[]     = { 0x4b, 0x30, 0x40, 0x2e };
 const PROGMEM u8 chans_bind_x5c[] = { 0x27, 0x1b, 0x39, 0x28, 0x24, 0x22, 0x2e, 0x36,
@@ -290,7 +290,7 @@ void RFProtocolSyma::init2(void)
       mChannelCnt = sizeof(chans_bind);
       memcpy_P(mChannelBuf, chans_bind, mChannelCnt);
     }
-    
+
     mCurChan   = 0;
     mPacketCtr = 0;
     printf(F("init2 : %ld\n"), millis());
@@ -317,7 +317,7 @@ const PROGMEM u8 start_chans_2[] = {0x2a, 0x0a, 0x42, 0x22};
 const PROGMEM u8 start_chans_3[] = {0x1a, 0x3a, 0x12, 0x32};
 
 // channels determined by last byte of tx address
-void RFProtocolSyma::setRFChannel(u8 address) 
+void RFProtocolSyma::setRFChannel(u8 address)
 {
   u8 laddress = address & 0x1f;
   u8 i;
@@ -450,7 +450,7 @@ int RFProtocolSyma::getInfo(s8 id, u8 *data, u8 *size)
 
         case INFO_PACKET_CTR:
             *size = sizeof(mPacketCtr);
-            memcpy(data, &mPacketCtr, *size);
+            *((u32*)data) = mPacketCtr;
             break;
     }
 }
