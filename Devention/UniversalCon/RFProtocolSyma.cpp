@@ -36,6 +36,36 @@ u8 RFProtocolSyma::getChannel(CH_T id)
     return ret;
 }
 
+void RFProtocolSyma::getControls(u8* throttle, u8* rudder, u8* elevator, u8* aileron, u8* flags)
+{
+    // Protocol is registered AETRF, that is
+    // Aileron is channel 1, Elevator - 2, Throttle - 3, Rudder - 4, Flip control - 5
+
+    *aileron  = getChannel(CH_AILERON);
+    *elevator = getChannel(CH_ELEVATOR);
+    *throttle = getChannel(CH_THROTTLE);
+    *throttle = (*throttle & 0x80) ? (0xff - *throttle) : (0x80 + *throttle);
+    *rudder   = getChannel(CH_RUDDER);
+
+    // Channel 5
+    if (RFProtocol::getControl(CH_AUX1) <= 0)
+        *flags &= ~FLAG_FLIP;
+    else
+        *flags |= FLAG_FLIP;
+
+    // Channel 6
+    if (RFProtocol::getControl(CH_AUX2) <= 0)
+        *flags &= ~FLAG_PICTURE;
+    else
+        *flags |= FLAG_PICTURE;
+
+    // Channel 7
+    if (RFProtocol::getControl(CH_AUX3) <= 0)
+        *flags &= ~FLAG_VIDEO;
+    else
+        *flags |= FLAG_VIDEO;
+}
+
 #define X5C_CHAN2TRIM(X) ((((X) & 0x80 ? 0xff - (X) : 0x80 + (X)) >> 2) + 0x20)
 void RFProtocolSyma::buildPacketX5C(u8 bind)
 {
@@ -46,11 +76,8 @@ void RFProtocolSyma::buildPacketX5C(u8 bind)
         mPacketBuf[14] = 0xc0;
         mPacketBuf[15] = 0x17;
     } else {
-        mPacketBuf[0] = getChannel(CH_THROTTLE);
-        mPacketBuf[0] = (mPacketBuf[0] & 0x80) ? (0xff - mPacketBuf[0]) : (0x80 + mPacketBuf[0]);
-        mPacketBuf[1] = getChannel(CH_RUDDER);
-        mPacketBuf[2] = getChannel(CH_ELEVATOR) ^ 0x80;  // reversed from default
-        mPacketBuf[3] = getChannel(CH_AILERON);
+        getControls(&mPacketBuf[0], &mPacketBuf[1], &mPacketBuf[2], &mPacketBuf[3], &mAuxFlag);
+        mPacketBuf[2] ^= 0x80;  // reversed from default
         mPacketBuf[4] = X5C_CHAN2TRIM(getChannel(CH_RUDDER) ^ 0x80);     // drive trims for extra control range
         mPacketBuf[5] = X5C_CHAN2TRIM(getChannel(CH_ELEVATOR));
         mPacketBuf[6] = X5C_CHAN2TRIM(getChannel(CH_AILERON) ^ 0x80);
@@ -61,10 +88,10 @@ void RFProtocolSyma::buildPacketX5C(u8 bind)
         mPacketBuf[11] = 0x00;
         mPacketBuf[12] = 0x00;
         mPacketBuf[13] = 0x00;
-        mPacketBuf[14] = (mAuxFlag & FLAG_VIDEO   ? 0x10 : 0x00)
-                   | (mAuxFlag & FLAG_PICTURE ? 0x08 : 0x00)
-                   | (mAuxFlag & FLAG_FLIP    ? 0x01 : 0x00)
-                   | 0x04;  // always high rates (bit 3 is rate control)
+        mPacketBuf[14] = ((mAuxFlag & FLAG_VIDEO)   ? 0x10 : 0x00)
+                       | ((mAuxFlag & FLAG_PICTURE) ? 0x08 : 0x00)
+                       | ((mAuxFlag & FLAG_FLIP)    ? 0x01 : 0x00)
+                       | 0x04;  // always high rates (bit 3 is rate control)
         mPacketBuf[15] = getCheckSum(mPacketBuf);
     }
 }
@@ -82,16 +109,12 @@ void RFProtocolSyma::buildPacket(u8 bind)
         mPacketBuf[7] = 0xaa;
         mPacketBuf[8] = 0x00;
     } else {
-        mPacketBuf[0] = getChannel(CH_THROTTLE);
-        mPacketBuf[0] = (mPacketBuf[0] & 0x80) ? (0xff - mPacketBuf[0]) : (0x80 + mPacketBuf[0]);
-        mPacketBuf[1] = getChannel(CH_ELEVATOR);
-        mPacketBuf[2] = getChannel(CH_RUDDER);
-        mPacketBuf[3] = getChannel(CH_AILERON);
-        mPacketBuf[4] = (mAuxFlag & FLAG_VIDEO   ? 0x80 : 0x00)
-                  | (mAuxFlag & FLAG_PICTURE ? 0x40 : 0x00);
+        getControls(&mPacketBuf[0], &mPacketBuf[2], &mPacketBuf[1], &mPacketBuf[3], &mAuxFlag);
+        mPacketBuf[4] = ((mAuxFlag & FLAG_VIDEO)   ? 0x80 : 0x00)
+                      | ((mAuxFlag & FLAG_PICTURE) ? 0x40 : 0x00);
         // use trims to extend controls
         mPacketBuf[5] = (getChannel(CH_ELEVATOR) >> 2) | 0xc0; // always high rates (bit 7 is rate control)
-        mPacketBuf[6] = (getChannel(CH_RUDDER) >> 2)   | (mAuxFlag & FLAG_FLIP  ? 0x40 : 0x00);
+        mPacketBuf[6] = (getChannel(CH_RUDDER) >> 2)   | ((mAuxFlag & FLAG_FLIP) ? 0x40 : 0x00);
         mPacketBuf[7] = getChannel(CH_AILERON) >> 2;
         mPacketBuf[8] = 0x00;
     }

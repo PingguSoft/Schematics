@@ -37,7 +37,7 @@ public:
     RFProtocolSyma():RFProtocol(RFProtocol::TX_NRF24L01, RFProtocol::PROTO_NRF24L01_SYMAX) { }
     RFProtocolSyma(u32 id):RFProtocol(id) { }
     ~RFProtocolSyma() { close(); }
-    
+
 // for timer
     virtual void handleTimer(s8 id);
 
@@ -55,6 +55,7 @@ private:
     u8   getCheckSum(u8 *data);
     u8   checkStatus(void);
     u8   getChannel(CH_T id);
+    void getControls(u8* throttle, u8* rudder, u8* elevator, u8* aileron, u8* flags);
     void buildPacketX5C(u8 bind);
     void buildPacket(u8 bind);
     void sendPacket(u8 bind);
@@ -81,7 +82,7 @@ private:
     u8   mRxTxAddrBuf[5];
     u8   mState;
     s8   mTmrState;
-    
+
 protected:
 
 };
