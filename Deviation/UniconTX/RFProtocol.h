@@ -3,8 +3,9 @@
 
 #include "Common.h"
 #include "utils.h"
+#include "Timer.h"
 
-class RFProtocol
+class RFProtocol : public Timer
 {
 public:
     #define CHAN_MAX_VALUE 500
@@ -64,17 +65,19 @@ public:
 
     // utility functions
     static u32   buildID(u8 module, u8 proto, u8 option)  { return ((u32)module << 16 | (u32)proto << 8 | option); }
-    static u8    getModule(u32 id)  { return (id >> 16) & 0xff; }
-    static u8    getProtocol(u32 id){ return (id >> 8) & 0xff;  }
-    static u8    getOption(u32 id)  { return id & 0xff;         }
+    static u8    getModule(u32 id)      { return (id >> 16) & 0xff; }
+    static u8    getProtocol(u32 id)    { return (id >> 8) & 0xff;  }
+    static u8    getProtocolOpt(u32 id) { return id & 0xff;         }
 
 
     RFProtocol(u32 id);
     RFProtocol(u8 module, u8 proto);
     virtual ~RFProtocol()           { }
 
-    u32  getProtoID()               { return mProtoID; }
-    u8   getProtoOpt()              { return mProtoID & 0xff; }
+    u32  getProtoID(void)           { return mProtoID; }
+    u8   getModule(void)            { return (mProtoID >> 16) & 0xff; }
+    u8   getProtocol(void)          { return (mProtoID >> 8) & 0xff;  }
+    u8   getProtocolOpt(void)       { return mProtoID & 0xff; }
     void setControllerID(u32 id)    { mConID = id;     }
     u32  getControllerID()          { return mConID;   }
 
@@ -86,13 +89,17 @@ public:
     void injectTrims(u8 *data);
     u8   getTrim(u8 trim);
 
+// for timer
+    virtual void handleTimer(s8 id) = 0;
+
+// for protocol
     virtual void loop(void)    { }
-    virtual int  init(void)    { }
-    virtual int  close(void)   { }
-    virtual int  reset(void)   { }
-    virtual int  getChannels(void)   { }
-    virtual int  setPower(int power) { }
-    virtual int  getInfo(s8 id, u8 *data, u8 *size) { }
+    virtual int  init(void)    { return 0; }
+    virtual int  close(void)   { return 0; }
+    virtual int  reset(void)   { return 0; }
+    virtual int  getChannels(void)   { return 0; }
+    virtual int  setPower(int power) { return 0; }
+    virtual int  getInfo(s8 id, u8 *data) { return 0; }
     virtual void test(s8 id) { }
 
 private:

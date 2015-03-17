@@ -7,18 +7,20 @@ u8 RFProtocolSyma::getCheckSum(u8 *data)
     u8 sum = data[0];
 
     for (int i=1; i < mPacketSize-1; i++)
-        if (getProtoOpt() == FORMAT_X5C_X2)
+        if (getProtocolOpt() == FORMAT_X5C_X2)
             sum += data[i];
         else
             sum ^= data[i];
 
-    return sum + ((getProtoOpt() == FORMAT_X5C_X2) ? 0 : 0x55);
+    return sum + ((getProtocolOpt() == FORMAT_X5C_X2) ? 0 : 0x55);
 }
 
 u8 RFProtocolSyma::checkStatus()
 {
     u8 stat = mDev.readReg(NRF24L01_07_STATUS);
     printf(F("checkStatus :%x\n"), stat);
+
+    return stat;
 }
 
 
@@ -124,7 +126,7 @@ void RFProtocolSyma::buildPacket(u8 bind)
 
 void RFProtocolSyma::sendPacket(u8 bind)
 {
-    if (getProtoOpt() == FORMAT_X5C_X2)
+    if (getProtocolOpt() == FORMAT_X5C_X2)
       buildPacketX5C(bind);
     else
       buildPacket(bind);
@@ -200,7 +202,6 @@ void RFProtocolSyma::init1(void)
     const u8 rx_tx_addr_x5c[]  = {0x6d,0x6a,0x73,0x73,0x73};    // X5C uses same address for bind and data
 
     mDev.initialize();
-
     mDev.setTxRxMode(TX_EN);
 
     mDev.readReg(NRF24L01_07_STATUS);
@@ -211,7 +212,7 @@ void RFProtocolSyma::init1(void)
     mDev.writeReg(NRF24L01_04_SETUP_RETR, 0xff); // 4mS retransmit t/o, 15 tries (retries w/o AA?)
     mDev.writeReg(NRF24L01_05_RF_CH, 0x08);
 
-    if (getProtoOpt() == FORMAT_X5C_X2) {
+    if (getProtocolOpt() == FORMAT_X5C_X2) {
       mDev.setBitrate(NRF24L01_BR_1M);
       mPacketSize = 16;
     } else {
@@ -236,7 +237,7 @@ void RFProtocolSyma::init1(void)
     mDev.writeReg(NRF24L01_17_FIFO_STATUS, 0x00); // Just in case, no real bits to write here
 
     mDev.writeRegisterMulti(NRF24L01_10_TX_ADDR,
-                                (getProtoOpt() == FORMAT_X5C_X2) ? rx_tx_addr_x5c : bind_rx_tx_addr,
+                                (getProtocolOpt() == FORMAT_X5C_X2) ? rx_tx_addr_x5c : bind_rx_tx_addr,
                                 5);
 
     mDev.readReg(NRF24L01_07_STATUS);
@@ -305,7 +306,7 @@ void RFProtocolSyma::init2(void)
     memcpy_P(mChannelBuf, first_packet, sizeof(first_packet));
     mDev.writePayload(mChannelBuf, sizeof(first_packet));
 
-    if (getProtoOpt() == FORMAT_X5C_X2) {
+    if (getProtocolOpt() == FORMAT_X5C_X2) {
       mChannelCnt = sizeof(chans_bind_x5c);
       memcpy_P(mChannelBuf, chans_bind_x5c, mChannelCnt);
     } else {
@@ -323,7 +324,7 @@ const PROGMEM u8 chans_data_x5c[] = {0x1d, 0x2f, 0x26, 0x3d, 0x15, 0x2b, 0x25, 0
                                      0x27, 0x2c, 0x1c, 0x3e, 0x39, 0x2d, 0x22};
 void RFProtocolSyma::init3(void)
 {
-    if (getProtoOpt() == FORMAT_X5C_X2) {
+    if (getProtocolOpt() == FORMAT_X5C_X2) {
       mChannelCnt = sizeof(chans_data_x5c);
       memcpy_P(mChannelBuf, chans_data_x5c, mChannelCnt);
     } else {
@@ -458,23 +459,25 @@ int RFProtocolSyma::setPower(int power)
     return 0;
 }
 
-int RFProtocolSyma::getInfo(s8 id, u8 *data, u8 *size)
+int RFProtocolSyma::getInfo(s8 id, u8 *data)
 {
+    u8 size = 0;
     switch (id) {
         case INFO_STATE:
             *data = mState;
-            *size = 1;
+            size = 1;
             break;
 
         case INFO_CHANNEL:
             *data = mChannelBuf[mCurChan];
-            *size = 1;
+            size = 1;
             break;
 
         case INFO_PACKET_CTR:
-            *size = sizeof(mPacketCtr);
+            size = sizeof(mPacketCtr);
             *((u32*)data) = mPacketCtr;
             break;
     }
+    return size;
 }
 

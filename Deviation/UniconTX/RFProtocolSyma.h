@@ -5,7 +5,7 @@
 #include "RFProtocol.h"
 #include "Timer.h"
 
-class RFProtocolSyma : public RFProtocol, public Timer
+class RFProtocolSyma : public RFProtocol
 {
 #define PAYLOADSIZE         10  // receive data pipes set to this size, but unused
 #define MAX_PACKET_SIZE     16  // X11,X12,X5C-1 10-byte, X5C 16-byte
@@ -48,7 +48,7 @@ public:
     virtual int  reset(void);
     virtual int  getChannels(void);
     virtual int  setPower(int power);
-    virtual int  getInfo(s8 id, u8 *data, u8 *size);
+    virtual int  getInfo(s8 id, u8 *data);
     virtual void test(s8 id);
 
 private:

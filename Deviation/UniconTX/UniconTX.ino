@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "RFProtocolSyma.h"
 #include "RFProtocolYD717.h"
+#include "RFProtocolV2x2.h"
 #include "SerialProtocol.h"
 
 SerialProtocol  mSerial;
@@ -32,6 +33,11 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
 
                     case RFProtocol::PROTO_NRF24L01_YD717:
                         mRFProto = new RFProtocolYD717(id);
+                        ret = 1;
+                        break;
+
+                    case RFProtocol::PROTO_NRF24L01_V2x2:
+                        mRFProto = new RFProtocolV2x2(id);
                         ret = 1;
                         break;
                 }
@@ -73,11 +79,12 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
 
             buf[0] = *data;
             if (mRFProto) {
-                mRFProto->getInfo(*data, &buf[1], &size);
+                size = mRFProto->getInfo(*data, &buf[1]);
             }
             mSerial.sendResponse(true, cmd, buf, size + 1);
             break;
     }
+    return ret;
 }
 
 void setup()

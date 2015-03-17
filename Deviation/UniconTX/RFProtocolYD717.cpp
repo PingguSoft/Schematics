@@ -42,7 +42,7 @@ void RFProtocolYD717::getControls(u8* throttle, u8* rudder, u8* elevator, u8* ai
     *throttle = getControl(CH_THROTTLE);
 
     // Channel 4
-    if(getProtoOpt() == FORMAT_XINXUN) {
+    if(getProtocolOpt() == FORMAT_XINXUN) {
       *rudder = getControl(CH_RUDDER);
       *rudder_trim = (0xff - *rudder) >> 1;
     } else {
@@ -59,16 +59,16 @@ void RFProtocolYD717::getControls(u8* throttle, u8* rudder, u8* elevator, u8* ai
     *aileron_trim = *aileron >> 1;
 
     // Channel 5
-    if (getControl(CH_AUX1) <= 0)
-      *flags &= ~FLAG_FLIP;
+    if (RFProtocol::getControl(CH_AUX1) <= 0)
+      *flags &= ~YD717_FLAG_FLIP;
     else
-      *flags |= FLAG_FLIP;
+      *flags |= YD717_FLAG_FLIP;
 
     // Channel 6
-    if (getControl(CH_AUX2) <= 0)
-      *flags &= ~FLAG_LIGHT;
+    if (RFProtocol::getControl(CH_AUX2) <= 0)
+      *flags &= ~YD717_FLAG_LIGHT;
     else
-      *flags |= FLAG_LIGHT;
+      *flags |= YD717_FLAG_LIGHT;
 
 
 //    printf(F("ail %3d+%3d, ele %3d+%3d, thr %3d, rud %3d+%3d, flip enable %d\n"),
@@ -85,10 +85,10 @@ void RFProtocolYD717::sendPacket(u8 bind)
         mPacketBuf[3]= mRxTxAddrBuf[3];
         mPacketBuf[4] = 0x56;
         mPacketBuf[5] = 0xAA;
-        mPacketBuf[6] = (getProtoOpt() == FORMAT_NI_HUI) ? 0x00 : 0x32;
+        mPacketBuf[6] = (getProtocolOpt() == FORMAT_NI_HUI) ? 0x00 : 0x32;
         mPacketBuf[7] = 0x00;
     } else {
-        if (getProtoOpt() == FORMAT_YD717)
+        if (getProtocolOpt() == FORMAT_YD717)
             getControls(&mPacketBuf[0], &mPacketBuf[1], &mPacketBuf[3], &mPacketBuf[4], &mPacketBuf[7], &mPacketBuf[6], &mPacketBuf[2], &mPacketBuf[5]);
         else
             getControls(&mPacketBuf[0], &mPacketBuf[1], &mPacketBuf[3], &mPacketBuf[4], &mPacketBuf[7], &mPacketBuf[2], &mPacketBuf[5], &mPacketBuf[6]);
@@ -97,7 +97,7 @@ void RFProtocolYD717::sendPacket(u8 bind)
     // clear mPacketBuf status bits and TX FIFO
     mDev.writeReg(NRF24L01_07_STATUS, (BV(NRF24L01_07_TX_DS) | BV(NRF24L01_07_MAX_RT)));
 
-    if(getProtoOpt() == FORMAT_YD717) {
+    if(getProtocolOpt() == FORMAT_YD717) {
         mDev.writePayload(mPacketBuf, 8);
     } else {
         mPacketBuf[8] = mPacketBuf[0];  // checksum
@@ -191,9 +191,9 @@ void RFProtocolYD717::init2(void)
     // for bind packets set address to prearranged value known to receiver
     u8 bind_rx_tx_addr[5];
     
-    if (getProtoOpt() == FORMAT_SYMA_X4)
+    if (getProtocolOpt() == FORMAT_SYMA_X4)
         for(u8 i=0; i < 5; i++) bind_rx_tx_addr[i]  = 0x60;
-    else if (getProtoOpt() == FORMAT_NI_HUI)
+    else if (getProtocolOpt() == FORMAT_NI_HUI)
         for(u8 i=0; i < 5; i++) bind_rx_tx_addr[i]  = 0x64;
     else
         for(u8 i=0; i < 5; i++) bind_rx_tx_addr[i]  = 0x65;
@@ -327,22 +327,24 @@ int RFProtocolYD717::setPower(int power)
     return 0;
 }
 
-int RFProtocolYD717::getInfo(s8 id, u8 *data, u8 *size)
+int RFProtocolYD717::getInfo(s8 id, u8 *data)
 {
+    u8 size = 0;
     switch (id) {
         case INFO_STATE:
             *data = mState;
-            *size = 1;
+            size = 1;
             break;
 
         case INFO_CHANNEL:
             *data = RF_CHANNEL;
-            *size = 1;
+            size = 1;
             break;
 
         case INFO_PACKET_CTR:
-            *size = sizeof(mPacketCtr);
-            memcpy(data, &mPacketCtr, *size);
+            size = sizeof(mPacketCtr);
+            *((u32*)data) = mPacketCtr;
             break;
     }
+    return size;
 }

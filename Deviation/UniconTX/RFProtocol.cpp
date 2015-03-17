@@ -27,7 +27,7 @@ RFProtocol::RFProtocol(u32 id)
 
 RFProtocol::RFProtocol(u8 module, u8 proto)
 { 
-    mProtoID = (module << 16 | proto << 8);
+    mProtoID = ((u32)module << 16 | (u32)proto << 8);
     initVars();
 }
 

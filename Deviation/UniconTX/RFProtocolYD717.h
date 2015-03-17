@@ -3,10 +3,9 @@
 
 #include "DeviceNRF24L01.h"
 #include "RFProtocol.h"
-#include "Timer.h"
 
 
-class RFProtocolYD717 : public RFProtocol, public Timer
+class RFProtocolYD717 : public RFProtocol
 {
 #define PAYLOADSIZE          8  // receive data pipes set to this size, but unused
 #define MAX_PACKET_SIZE      9  // YD717 packets have 8-byte payload, Syma X4 is 9
@@ -18,8 +17,9 @@ class RFProtocolYD717 : public RFProtocol, public Timer
 
 // Stock tx fixed frequency is 0x3C. Receiver only binds on this freq.
 #define RF_CHANNEL          0x3C
-#define FLAG_FLIP           0x0F
-#define FLAG_LIGHT          0x10
+
+#define YD717_FLAG_FLIP     0x0F
+#define YD717_FLAG_LIGHT    0x10
 
 // Packet ack status values
 enum {
@@ -58,7 +58,7 @@ public:
     virtual int  reset(void);
     virtual int  getChannels(void);
     virtual int  setPower(int power);
-    virtual int  getInfo(s8 id, u8 *data, u8 *size);
+    virtual int  getInfo(s8 id, u8 *data);
     virtual void test(s8 id);
 
 private:
