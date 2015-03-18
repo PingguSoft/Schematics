@@ -19,6 +19,8 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
 {
     u32 id;
     u8  ret = 0;
+    u8 	buf[5];
+    u8 	sz = 0;
 
     switch (cmd) {
         case SerialProtocol::CMD_SET_RFPROTOCOL:
@@ -87,15 +89,17 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
             break;
 
         case SerialProtocol::CMD_GET_INFO:
-            u8 buf[5];
-            u8 size = 0;
-
             buf[0] = *data;
             if (mRFProto) {
-                size = mRFProto->getInfo(buf[0], &buf[1]);
+                sz = mRFProto->getInfo(buf[0], &buf[1]);
             }
-            mSerial.sendResponse(true, cmd, buf, size + 1);
+            mSerial.sendResponse(true, cmd, buf, sz + 1);
             break;
+
+      	case SerialProtocol::CMD_GET_FREE_RAM:
+      		u16 ram = freeRam();
+      		mSerial.sendResponse(true, cmd, (u8*)&ram, sizeof(ram));
+	      	break;
     }
     return ret;
 }

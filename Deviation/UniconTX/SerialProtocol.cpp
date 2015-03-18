@@ -120,8 +120,20 @@ void SerialProtocol::sendResponse(bool ok, u8 cmd, u8 *data, u8 size)
 
 void SerialProtocol::evalCommand(u8 cmd, u8 *data, u8 size)
 {
-    if (mCallback)
-        (*mCallback)(cmd, data, size);
+    static u8 batt = 0;
+
+    switch (cmd) {
+        case CMD_TEST:
+            u8 buf[7];
+            buf[0] = batt++;
+            sendResponse(true, cmd, buf, 7);
+            break;
+
+        default:
+            if (mCallback)
+                (*mCallback)(cmd, data, size);
+            break;
+    }
 }
 
 void SerialProtocol::handleRX(void)

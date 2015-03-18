@@ -17,6 +17,7 @@ public:
         CMD_STOP_RF,
         CMD_INJECT_CONTROLS,    // 12ch data : throttle, rudder, elevator, aileron, aux1..8
         CMD_GET_INFO,
+        CMD_GET_FREE_RAM,
         CMD_TEST = 110,
     } CMD_T;
 
