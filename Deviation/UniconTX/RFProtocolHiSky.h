@@ -23,7 +23,6 @@ enum {
 };
 
 public:
-    RFProtocolHiSky():RFProtocol(RFProtocol::TX_NRF24L01, RFProtocol::PROTO_NRF24L01_HISKY) { }
     RFProtocolHiSky(u32 id):RFProtocol(id) { }
     ~RFProtocolHiSky() { close(); }
 
@@ -56,7 +55,7 @@ private:
     u8   mBindingIdx;
     u8   mBindingBufs[4][MAX_PACKET_SIZE];
     u8   mCtr1ms;
-    
+
     u16  mBindCtr;
     u32  mPacketCtr;
     u8   mRxTxAddrBuf[ADDR_BUF_SIZE];

@@ -32,51 +32,45 @@ RFProtocol::~RFProtocol()
 {
 }
 
-RFProtocol::RFProtocol(u8 module, u8 proto)
-{ 
-    mProtoID = ((u32)module << 16 | (u32)proto << 8);
-    initVars();
+void RFProtocol::loop(void)
+{
 }
 
-void RFProtocol::loop(void)    
-{ 
+int RFProtocol::init(void)
+{
+    return 0;
 }
 
-int RFProtocol::init(void)    
-{ 
-    return 0; 
-}
-
-int RFProtocol::close(void)   
-{ 
-    if (mTmrState > 0) 
-        stop(mTmrState); 
+int RFProtocol::close(void)
+{
+    if (mTmrState > 0)
+        stop(mTmrState);
     return 0;
 }
 
 int RFProtocol::reset(void)
-{ 
-    return 0; 
+{
+    return 0;
 }
 
 int RFProtocol::getChannels(void)
-{ 
+{
     return 0;
 }
 
 int RFProtocol::setRFPower(u8 power)
-{ 
-    mTXPower = (power | 0x80); 
+{
+    mTXPower = (power | 0x80);
     return 0;
 }
 
 u8 RFProtocol::getRFPower(void)
-{ 
-    return (mTXPower & 0x7f); 
+{
+    return (mTXPower & 0x7f);
 }
 
 bool RFProtocol::isRFPowerUpdated(void)
-{ 
+{
     return (mTXPower & 0x80);
 }
 
@@ -86,7 +80,7 @@ void RFProtocol::clearRFPowerUpdated(void)
 }
 
 int RFProtocol::getInfo(s8 id, u8 *data)
-{ 
+{
     return 0;
 }
 
@@ -129,7 +123,7 @@ u8 RFProtocol::getTrim(u8 trim)
 void RFProtocol::handleTimer(s8 id)
 {
     u16 nextTime;
-    
+
     if (id == mTmrState) {
         nextTime = callState();
         if (nextTime > 0)

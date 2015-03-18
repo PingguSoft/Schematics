@@ -294,7 +294,7 @@ void RFProtocolSyma::setRFChannel(u8 address)
 
     mChannelCnt = 4;
     if (laddress < 0x10) {
-        if (laddress == 6) 
+        if (laddress == 6)
             laddress = 7;
         for(i=0; i < mChannelCnt; i++) {
             mChannelBuf[i] = pgm_read_byte(START_CHANS_1 + i) + laddress;
@@ -408,6 +408,11 @@ int RFProtocolSyma::getInfo(s8 id, u8 *data)
         case INFO_PACKET_CTR:
             size = sizeof(mPacketCtr);
             *((u32*)data) = mPacketCtr;
+            break;
+
+        case INFO_ID:
+            size = 4;
+            *((u32*)data) = (u32)getProtoID();
             break;
     }
     return size;

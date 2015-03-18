@@ -92,7 +92,7 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
 
             buf[0] = *data;
             if (mRFProto) {
-                size = mRFProto->getInfo(*data, &buf[1]);
+                size = mRFProto->getInfo(buf[0], &buf[1]);
             }
             mSerial.sendResponse(true, cmd, buf, size + 1);
             break;

@@ -61,7 +61,6 @@ enum {
 #define MAX_RF_CHANNELS     17
 
 public:
-    RFProtocolV2x2():RFProtocol(RFProtocol::TX_NRF24L01, RFProtocol::PROTO_NRF24L01_V2x2) { }
     RFProtocolV2x2(u32 id):RFProtocol(id) { }
     ~RFProtocolV2x2() { close(); }
 

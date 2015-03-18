@@ -45,7 +45,6 @@ enum {
 };
 
 public:
-    RFProtocolYD717():RFProtocol(RFProtocol::TX_NRF24L01, RFProtocol::PROTO_NRF24L01_YD717) { }
     RFProtocolYD717(u32 id):RFProtocol(id) { }
     ~RFProtocolYD717() { close(); }
 
@@ -72,7 +71,7 @@ private:
     void init3(void);
     void setRFChannel(u8 address);
     void updateTelemetry(void);
-    
+
     void testUp(void);
     void testDown(void);
 

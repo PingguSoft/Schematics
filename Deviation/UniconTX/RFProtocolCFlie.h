@@ -33,7 +33,6 @@ enum {
 };
 
 public:
-    RFProtocolCFlie():RFProtocol(RFProtocol::TX_NRF24L01, RFProtocol::PROTO_NRF24L01_CFLIE) { }
     RFProtocolCFlie(u32 id):RFProtocol(id) { }
     ~RFProtocolCFlie() { close(); }
 
@@ -67,7 +66,7 @@ private:
     u32  mPacketCtr;
     u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
     u8   mState;
-    
+
 protected:
 
 };

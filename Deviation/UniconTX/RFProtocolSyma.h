@@ -35,7 +35,6 @@ enum {
 };
 
 public:
-    RFProtocolSyma():RFProtocol(RFProtocol::TX_NRF24L01, RFProtocol::PROTO_NRF24L01_SYMAX) { }
     RFProtocolSyma(u32 id):RFProtocol(id) { }
     ~RFProtocolSyma() { close(); }
 

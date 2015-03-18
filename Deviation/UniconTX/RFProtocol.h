@@ -60,7 +60,8 @@ public:
     typedef enum {
         INFO_STATE,
         INFO_CHANNEL,
-        INFO_PACKET_CTR
+        INFO_PACKET_CTR,
+        INFO_ID
     } INFO_T;
 
     // utility functions
@@ -71,7 +72,6 @@ public:
 
 
     RFProtocol(u32 id);
-    RFProtocol(u8 module, u8 proto);
     virtual ~RFProtocol();
 
     u32  getProtoID(void)           { return mProtoID; }
@@ -93,10 +93,10 @@ public:
     u8   getRFPower(void);
     bool isRFPowerUpdated(void);
     void clearRFPowerUpdated(void);
-    
+
 
     void startState(unsigned long period);
-    
+
 
     // for timer
     virtual void handleTimer(s8 id);
@@ -115,10 +115,10 @@ public:
 private:
     void initVars();
 
-    s16  mBufControls[MAX_CHANNEL];
-    u8   mBufTrims[MAX_TRIM];
     u32  mProtoID;
     u32  mConID;
+    s16  mBufControls[MAX_CHANNEL];
+    u8   mBufTrims[MAX_TRIM];
     s8   mTmrState;
     u8   mTXPower;
 };
