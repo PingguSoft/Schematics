@@ -14,6 +14,7 @@ class RFProtocolYD717 : public RFProtocol
 #define PACKET_PERIOD_MS     8
 #define INITIAL_WAIT_MS     50
 #define PACKET_CHKTIME_MS    5  // Time to wait if packet not yet acknowledged or timed out
+#define ADDR_BUF_SIZE        5
 
 // Stock tx fixed frequency is 0x3C. Receiver only binds on this freq.
 #define RF_CHANNEL          0x3C
@@ -32,7 +33,7 @@ enum {
     YD717_INIT1 = 0,
     YD717_BIND2,
     YD717_BIND3,
-    YD717_DATA
+    YD717_DATA  = 0x10
 };
 
 enum {
@@ -48,18 +49,15 @@ public:
     RFProtocolYD717(u32 id):RFProtocol(id) { }
     ~RFProtocolYD717() { close(); }
 
-// for timer
-    virtual void handleTimer(s8 id);
-
 // for protocol
     virtual void loop(void);
     virtual int  init(void);
     virtual int  close(void);
     virtual int  reset(void);
     virtual int  getChannels(void);
-    virtual int  setPower(int power);
     virtual int  getInfo(s8 id, u8 *data);
     virtual void test(s8 id);
+    virtual u16  callState(void);
 
 private:
     u8   getCheckSum(u8 *data);
@@ -73,7 +71,6 @@ private:
     void init2(void);
     void init3(void);
     void setRFChannel(u8 address);
-    u16  callState(void);
     void updateTelemetry(void);
     
     void testUp(void);
@@ -82,15 +79,13 @@ private:
 // variables
     DeviceNRF24L01  mDev;
 
-    u8   mProtoOpt;
     u8   mPacketBuf[MAX_PACKET_SIZE];
     u8   mPacketSize;
     u16  mBindCtr;
     u32  mPacketCtr;
     u8   mAuxFlag;
-    u8   mRxTxAddrBuf[5];
+    u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
     u8   mState;
-    s8   mTmrState;
 
 protected:
 

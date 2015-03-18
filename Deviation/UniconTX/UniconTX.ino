@@ -7,7 +7,10 @@
 #include "RFProtocolSyma.h"
 #include "RFProtocolYD717.h"
 #include "RFProtocolV2x2.h"
+#include "RFProtocolHiSky.h"
+#include "RFProtocolCFlie.h"
 #include "SerialProtocol.h"
+
 
 SerialProtocol  mSerial;
 RFProtocol      *mRFProto = NULL;
@@ -38,6 +41,16 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
 
                     case RFProtocol::PROTO_NRF24L01_V2x2:
                         mRFProto = new RFProtocolV2x2(id);
+                        ret = 1;
+                        break;
+
+                    case RFProtocol::PROTO_NRF24L01_HISKY:
+                        mRFProto = new RFProtocolHiSky(id);
+                        ret = 1;
+                        break;
+
+                    case RFProtocol::PROTO_NRF24L01_CFLIE:
+                        mRFProto = new RFProtocolCFlie(id);
                         ret = 1;
                         break;
                 }

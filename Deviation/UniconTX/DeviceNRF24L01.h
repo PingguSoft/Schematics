@@ -85,33 +85,34 @@ enum TXRX_State {
     RX_EN,
 };
 
-
 class DeviceNRF24L01
 {
-#define PIN_IRQ       2
-#define PIN_CSN       8
-#define PIN_CE        7
+    #define PIN_IRQ       2
+    #define PIN_CSN       8
+    #define PIN_CE        7
 
-#define CS_HI() digitalWrite(PIN_CSN, HIGH);
-#define CS_LO() digitalWrite(PIN_CSN, LOW);
-#define CE_HI() digitalWrite(PIN_CE, HIGH);
-#define CE_LO() digitalWrite(PIN_CE, LOW);
+    #define CS_HI() digitalWrite(PIN_CSN, HIGH);
+    #define CS_LO() digitalWrite(PIN_CSN, LOW);
+    #define CE_HI() digitalWrite(PIN_CE, HIGH);
+    #define CE_LO() digitalWrite(PIN_CE, LOW);
 
 public:
     void initialize();
     int  reset();
     u8   writeReg(u8 reg, u8 data);
-    u8   writeRegisterMulti(u8 reg, const u8 data[], u8 length);
+    u8   writeRegisterMulti(u8 reg, const u8 *data, u8 length);
+    u8   writeRegisterMulti_P(u8 reg, const u8 *data, u8 length);
     u8   writePayload(u8 *data, u8 len);
+    u8   writePayload_P(const u8 *data, u8 length);
     u8   readReg(u8 reg);
-    u8   readRegisterMulti(u8 reg, u8 data[], u8 length);
+    u8   readRegisterMulti(u8 reg, u8 *data, u8 length);
     u8   readPayload(u8 *data, u8 len);
     u8   flushTx();
     u8   flushRx();
     u8   activate(u8 code);
     // Bitrate 0 - 1Mbps, 1 - 2Mbps, 3 - 250K (for nRF24L01+)
     u8   setBitrate(u8 bitrate);
-    u8   setPower(u8 power);
+    u8   setRFPower(u8 power);
     void setTxRxMode(enum TXRX_State);
 
 // To enable radio transmit after WritePayload you need to turn the radio

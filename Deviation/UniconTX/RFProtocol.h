@@ -72,7 +72,7 @@ public:
 
     RFProtocol(u32 id);
     RFProtocol(u8 module, u8 proto);
-    virtual ~RFProtocol()           { }
+    virtual ~RFProtocol();
 
     u32  getProtoID(void)           { return mProtoID; }
     u8   getModule(void)            { return (mProtoID >> 16) & 0xff; }
@@ -89,18 +89,28 @@ public:
     void injectTrims(u8 *data);
     u8   getTrim(u8 trim);
 
-// for timer
-    virtual void handleTimer(s8 id) = 0;
+    // power
+    u8   getRFPower(void);
+    bool isRFPowerUpdated(void);
+    void clearRFPowerUpdated(void);
+    
 
-// for protocol
-    virtual void loop(void)    { }
-    virtual int  init(void)    { return 0; }
-    virtual int  close(void)   { return 0; }
-    virtual int  reset(void)   { return 0; }
-    virtual int  getChannels(void)   { return 0; }
-    virtual int  setPower(int power) { return 0; }
-    virtual int  getInfo(s8 id, u8 *data) { return 0; }
-    virtual void test(s8 id) { }
+    void startState(unsigned long period);
+    
+
+    // for timer
+    virtual void handleTimer(s8 id);
+
+    // for protocol
+    virtual void loop(void);
+    virtual int  init(void);
+    virtual int  close(void);
+    virtual int  reset(void);
+    virtual int  getChannels(void);
+    virtual int  setRFPower(u8 power);
+    virtual int  getInfo(s8 id, u8 *data);
+    virtual void test(s8 id);
+    virtual u16  callState(void) = 0;
 
 private:
     void initVars();
@@ -109,6 +119,8 @@ private:
     u8   mBufTrims[MAX_TRIM];
     u32  mProtoID;
     u32  mConID;
+    s8   mTmrState;
+    u8   mTXPower;
 };
 
 #endif

@@ -17,6 +17,9 @@ void RFProtocol::initVars(void)
     mBufTrims[TRIM_RUDDER] = 0x0 >> 1;
     mBufTrims[TRIM_ELEVATOR] = 0x0 >> 1;
     mBufTrims[TRIM_AILERON] = 0x0 >> 1;
+
+    mTmrState = -1;
+    mTXPower  = TXPOWER_10mW;
 }
 
 RFProtocol::RFProtocol(u32 id)
@@ -25,10 +28,70 @@ RFProtocol::RFProtocol(u32 id)
     initVars();
 }
 
+RFProtocol::~RFProtocol()
+{
+}
+
 RFProtocol::RFProtocol(u8 module, u8 proto)
 { 
     mProtoID = ((u32)module << 16 | (u32)proto << 8);
     initVars();
+}
+
+void RFProtocol::loop(void)    
+{ 
+}
+
+int RFProtocol::init(void)    
+{ 
+    return 0; 
+}
+
+int RFProtocol::close(void)   
+{ 
+    if (mTmrState > 0) 
+        stop(mTmrState); 
+    return 0;
+}
+
+int RFProtocol::reset(void)
+{ 
+    return 0; 
+}
+
+int RFProtocol::getChannels(void)
+{ 
+    return 0;
+}
+
+int RFProtocol::setRFPower(u8 power)
+{ 
+    mTXPower = (power | 0x80); 
+    return 0;
+}
+
+u8 RFProtocol::getRFPower(void)
+{ 
+    return (mTXPower & 0x7f); 
+}
+
+bool RFProtocol::isRFPowerUpdated(void)
+{ 
+    return (mTXPower & 0x80);
+}
+
+void RFProtocol::clearRFPowerUpdated(void)
+{
+    mTXPower &= 0x7f;
+}
+
+int RFProtocol::getInfo(s8 id, u8 *data)
+{ 
+    return 0;
+}
+
+void RFProtocol::test(s8 id)
+{
 }
 
 void RFProtocol::injectControl(u8 ch, s16 val)
@@ -61,5 +124,23 @@ s16 RFProtocol::getControl(u8 ch)
 u8 RFProtocol::getTrim(u8 trim)
 {
     return mBufTrims[trim];
+}
+
+void RFProtocol::handleTimer(s8 id)
+{
+    u16 nextTime;
+    
+    if (id == mTmrState) {
+        nextTime = callState();
+        if (nextTime > 0)
+            mTmrState = after(nextTime);
+        else
+            stop(mTmrState);
+    }
+}
+
+void RFProtocol::startState(unsigned long period)
+{
+    mTmrState = after(period);
 }
 

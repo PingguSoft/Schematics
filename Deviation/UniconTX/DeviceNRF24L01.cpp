@@ -44,13 +44,23 @@ u8 DeviceNRF24L01::writeReg(u8 reg, u8 data)
     return res;
 }
 
-u8 DeviceNRF24L01::writeRegisterMulti(u8 reg, const u8 data[], u8 length)
+u8 DeviceNRF24L01::writeRegisterMulti(u8 reg, const u8 *data, u8 length)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(W_REGISTER | ( REGISTER_MASK & reg));
-    for (u8 i = 0; i < length; i++)
-    {
-        PROTOSPI_xfer(data[i]);
+    for (u8 i = 0; i < length; i++) {
+        PROTOSPI_xfer(*data++);
+    }
+    CS_HI();
+    return res;
+}
+
+u8 DeviceNRF24L01::writeRegisterMulti_P(u8 reg, const u8 *data, u8 length)
+{
+    CS_LO();
+    u8 res = PROTOSPI_xfer(W_REGISTER | ( REGISTER_MASK & reg));
+    for (u8 i = 0; i < length; i++) {
+        PROTOSPI_xfer(pgm_read_byte(data++));
     }
     CS_HI();
     return res;
@@ -60,9 +70,19 @@ u8 DeviceNRF24L01::writePayload(u8 *data, u8 length)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(W_TX_PAYLOAD);
-    for (u8 i = 0; i < length; i++)
-    {
-        PROTOSPI_xfer(data[i]);
+    for (u8 i = 0; i < length; i++) {
+        PROTOSPI_xfer(*data++);
+    }
+    CS_HI();
+    return res;
+}
+
+u8 DeviceNRF24L01::writePayload_P(const u8 *data, u8 length)
+{
+    CS_LO();
+    u8 res = PROTOSPI_xfer(W_TX_PAYLOAD);
+    for (u8 i = 0; i < length; i++) {
+        PROTOSPI_xfer(pgm_read_byte(data++));
     }
     CS_HI();
     return res;
@@ -81,8 +101,7 @@ u8 DeviceNRF24L01::readRegisterMulti(u8 reg, u8 data[], u8 length)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(R_REGISTER | (REGISTER_MASK & reg));
-    for(u8 i = 0; i < length; i++)
-    {
+    for(u8 i = 0; i < length; i++) {
         data[i] = PROTOSPI_xfer(0xFF);
     }
     CS_HI();
@@ -93,8 +112,7 @@ u8 DeviceNRF24L01::readPayload(u8 *data, u8 length)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(R_RX_PAYLOAD);
-    for(u8 i = 0; i < length; i++)
-    {
+    for(u8 i = 0; i < length; i++) {
         data[i] = PROTOSPI_xfer(0xFF);
     }
     CS_HI();
@@ -158,7 +176,7 @@ TXPOWER_30mW   = 15dBm
 TXPOWER_100mW  = 20dBm
 TXPOWER_150mW  = 22dBm
 */
-u8 DeviceNRF24L01::setPower(u8 power)
+u8 DeviceNRF24L01::setRFPower(u8 power)
 {
     u8 nrf_power = 0;
     switch(power) {

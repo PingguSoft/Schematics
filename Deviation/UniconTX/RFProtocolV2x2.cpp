@@ -114,9 +114,9 @@ void RFProtocolV2x2::sendPacket(u8 bind)
         mPacketBuf[6] = 0x40;   // roll
     }
         // TX id
-    mPacketBuf[7] = mTXID[0];
-    mPacketBuf[8] = mTXID[1];
-    mPacketBuf[9] = mTXID[2];
+    mPacketBuf[7] = mRxTxAddrBuf[0];
+    mPacketBuf[8] = mRxTxAddrBuf[1];
+    mPacketBuf[9] = mRxTxAddrBuf[2];
     // empty
     mPacketBuf[10] = 0x00;
     mPacketBuf[11] = 0x00;
@@ -153,12 +153,12 @@ void RFProtocolV2x2::sendPacket(u8 bind)
     // Check and adjust transmission power. We do this after
     // transmission to not bother with timeout after power
     // settings change -  we have plenty of time until next
-    // mPacketBuf.
-//    if (!mCurChan && tx_power != Model.tx_power) {
-        //Keep transmit power updated
-//        tx_power = Model.tx_power;
-//        mDev.setPower((tx_power);
-//    }
+    // packet
+    if (isRFPowerUpdated()) {
+        mDev.setRFPower(getRFPower());
+        clearRFPowerUpdated();
+    }
+
 }
 
 void RFProtocolV2x2::initRxTxAddr(void)
@@ -173,11 +173,11 @@ void RFProtocolV2x2::initRxTxAddr(void)
     printf(F("ID:%08lx\n"), lfsr);
 }
 
+const PROGMEM u8 RX_TX_ADDR[] = {0x66, 0x88, 0x68, 0x68, 0x68};
+const PROGMEM u8 RX_P1_ADDR[] = {0x88, 0x66, 0x86, 0x86, 0x86};
+    
 void RFProtocolV2x2::init1(void)
 {
-    u8 rx_tx_addr[] = {0x66, 0x88, 0x68, 0x68, 0x68};
-    u8 rx_p1_addr[] = {0x88, 0x66, 0x86, 0x86, 0x86};
-    
     mDev.initialize();
 
     // 2-bytes CRC, radio off
@@ -188,7 +188,7 @@ void RFProtocolV2x2::init1(void)
     mDev.writeReg(NRF24L01_04_SETUP_RETR, 0xFF);            // 4ms retransmit t/o, 15 tries
     mDev.writeReg(NRF24L01_05_RF_CH, 0x08);                 // Channel 8
     mDev.setBitrate(NRF24L01_BR_1M);                        // 1Mbps
-    mDev.setPower(TXPOWER_100mW);
+    mDev.setRFPower(getRFPower());
     mDev.writeReg(NRF24L01_07_STATUS, 0x70);                // Clear data ready, data sent, and retransmit
 //    mDev.writeReg(NRF24L01_08_OBSERVE_TX, 0x00);          // no write bits in this field
 //    mDev.writeReg(NRF24L01_00_CD, 0x00);                  // same
@@ -204,9 +204,9 @@ void RFProtocolV2x2::init1(void)
     mDev.writeReg(NRF24L01_16_RX_PW_P5, MAX_PACKET_SIZE);
     mDev.writeReg(NRF24L01_17_FIFO_STATUS, 0x00);           // Just in case, no real bits to write here
 
-    mDev.writeRegisterMulti(NRF24L01_0A_RX_ADDR_P0, rx_tx_addr, 5);
-    mDev.writeRegisterMulti(NRF24L01_0B_RX_ADDR_P1, rx_p1_addr, 5);
-    mDev.writeRegisterMulti(NRF24L01_10_TX_ADDR, rx_tx_addr, 5);
+    mDev.writeRegisterMulti_P(NRF24L01_0A_RX_ADDR_P0, RX_TX_ADDR, 5);
+    mDev.writeRegisterMulti_P(NRF24L01_0B_RX_ADDR_P1, RX_P1_ADDR, 5);
+    mDev.writeRegisterMulti_P(NRF24L01_10_TX_ADDR, RX_TX_ADDR, 5);
 
     printf(F("init1 : %ld\n"), millis());
 }
@@ -231,7 +231,7 @@ void RFProtocolV2x2::init2(void)
 // number in this case.
 // The pattern is defined by 5 least significant bits of
 // sum of 3 bytes comprising TX id
-const PROGMEM u8 freq_hopping[][16] = {
+const PROGMEM u8 FREQ_HOPPING[][16] = {
  { 0x27, 0x1B, 0x39, 0x28, 0x24, 0x22, 0x2E, 0x36,
    0x19, 0x21, 0x29, 0x14, 0x1E, 0x12, 0x2D, 0x18 }, //  00
  { 0x2E, 0x33, 0x25, 0x38, 0x19, 0x12, 0x18, 0x16,
@@ -245,13 +245,13 @@ const PROGMEM u8 freq_hopping[][16] = {
 void RFProtocolV2x2::setTxID(u32 id)
 {
     u8 sum;
-    mTXID[0] = (id >> 16) & 0xFF;
-    mTXID[1] = (id >> 8) & 0xFF;
-    mTXID[2] = (id >> 0) & 0xFF;
-    sum = mTXID[0] + mTXID[1] + mTXID[2];
+    mRxTxAddrBuf[0] = (id >> 16) & 0xFF;
+    mRxTxAddrBuf[1] = (id >> 8) & 0xFF;
+    mRxTxAddrBuf[2] = (id >> 0) & 0xFF;
+    sum = mRxTxAddrBuf[0] + mRxTxAddrBuf[1] + mRxTxAddrBuf[2];
 
     
-    const u8 *fh_row = freq_hopping[sum & 0x03];        // Base row is defined by lowest 2 bits
+    const u8 *fh_row = FREQ_HOPPING[sum & 0x03];        // Base row is defined by lowest 2 bits
     u8 increment = (sum & 0x1e) >> 2;                   // Higher 3 bits define increment to corresponding row
     
     for (u8 i = 0; i < 16; ++i) {
@@ -313,14 +313,6 @@ void RFProtocolV2x2::test(s8 id)
 {
 }
 
-void RFProtocolV2x2::handleTimer(s8 id)
-{
-    if (id == mTmrState) {
-        u16 time = callState();
-        mTmrState = after(time);
-    }
-}
-
 void RFProtocolV2x2::loop(void)
 {
     update();
@@ -330,7 +322,6 @@ int RFProtocolV2x2::init(void)
 {
     mPacketCtr = 0;
     mAuxFlag   = 0;
-    mTmrState  = -1;
     mLedBlinkCtr = BLINK_COUNT_MAX;
 
     init1();
@@ -342,13 +333,14 @@ int RFProtocolV2x2::init(void)
         mBindCtr = BLINK_COUNT;
     }
     initRxTxAddr();
-    mTmrState = after(INITIAL_WAIT_MS);
+    startState(INITIAL_WAIT_MS);
     printf(F("init : %ld\n"), millis());
     return 0;
 }
 
 int RFProtocolV2x2::close(void)
 {
+    RFProtocol::close();
     mDev.initialize();
     return (mDev.reset() ? 1L : -1L);
 }
@@ -361,12 +353,6 @@ int RFProtocolV2x2::reset(void)
 int RFProtocolV2x2::getChannels(void)
 {
     return 8;
-}
-
-int RFProtocolV2x2::setPower(int power)
-{
-    mDev.setPower(power);
-    return 0;
 }
 
 int RFProtocolV2x2::getInfo(s8 id, u8 *data)

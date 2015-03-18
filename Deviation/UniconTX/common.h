@@ -5,6 +5,7 @@
 #include <string.h>
 #include <inttypes.h>
 
+
 //Magic macro to check enum size
 //#define ctassert(n,e) extern unsigned char n[(e)?0:-1]
 #define ctassert(COND,MSG) typedef char static_assertion_##MSG[(COND)?1:-1]
@@ -29,7 +30,8 @@ typedef uint64_t u64;
 #define FALSE   0
 #endif
 
-enum TxPower {
+
+typedef enum TxPower {
     TXPOWER_100uW,
     TXPOWER_300uW,
     TXPOWER_1mW,
@@ -39,6 +41,6 @@ enum TxPower {
     TXPOWER_100mW,
     TXPOWER_150mW,
     TXPOWER_LAST,
-};
+} TXPOWER_T;
 
 #endif

@@ -14,6 +14,7 @@ class RFProtocolV2x2 : public RFProtocol
 #define PACKET_CHKTIME       1
 #define INITIAL_WAIT_MS     50
 #define FIRST_PACKET_MS     12
+#define ADDR_BUF_SIZE        3
 
 // Every second
 #define BLINK_COUNT         250
@@ -37,7 +38,7 @@ enum {
     V202_INIT2_NO_BIND,
     V202_BIND1,
     V202_BIND2,
-    V202_DATA
+    V202_DATA  = 0x10
 };
 
 enum {
@@ -64,18 +65,15 @@ public:
     RFProtocolV2x2(u32 id):RFProtocol(id) { }
     ~RFProtocolV2x2() { close(); }
 
-// for timer
-    virtual void handleTimer(s8 id);
-
 // for protocol
     virtual void loop(void);
     virtual int  init(void);
     virtual int  close(void);
     virtual int  reset(void);
     virtual int  getChannels(void);
-    virtual int  setPower(int power);
     virtual int  getInfo(s8 id, u8 *data);
     virtual void test(s8 id);
+    virtual u16  callState(void);
 
 private:
     u8   getCheckSum(u8 *data);
@@ -87,21 +85,18 @@ private:
     void init1(void);
     void init2(void);
     void setTxID(u32 id);
-    u16  callState(void);
 
 // variables
     DeviceNRF24L01  mDev;
     u8   mCurChan;
     u8   mChannelBuf[MAX_RF_CHANNELS];
-    u8   mProtoOpt;
     u8   mPacketBuf[MAX_PACKET_SIZE];
     u16  mBindCtr;
     u32  mPacketCtr;
     u8   mAuxFlag;
     u16  mLedBlinkCtr;
-    u8   mTXID[3];
+    u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
     u8   mState;
-    s8   mTmrState;
     u8   mPacketSent;
 protected:
 

@@ -30,6 +30,7 @@ u32 rand32()
     return rand32_r(0, 0);
 }
 
+#ifdef __DEBUG_PRINTF__
 void printf(char *fmt, ... )
 {
     char buf[128]; // resulting string limited to 128 chars
@@ -53,3 +54,4 @@ void printf(const __FlashStringHelper *fmt, ... )
     va_end(args);
 //    Serial.print(buf);
 }
+#endif

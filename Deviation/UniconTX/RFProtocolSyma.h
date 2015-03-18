@@ -14,6 +14,7 @@ class RFProtocolSyma : public RFProtocol
 #define PACKET_PERIOD_MS     4
 #define INITIAL_WAIT_MS      1
 #define FIRST_PACKET_MS     12
+#define ADDR_BUF_SIZE        5
 
 #define FLAG_FLIP         0x01
 #define FLAG_VIDEO        0x02
@@ -25,7 +26,7 @@ enum {
     SYMAX_INIT1 = 0,
     SYMAX_BIND2,
     SYMAX_BIND3,
-    SYMAX_DATA
+    SYMAX_DATA  = 0x10
 };
 
 enum {
@@ -38,18 +39,15 @@ public:
     RFProtocolSyma(u32 id):RFProtocol(id) { }
     ~RFProtocolSyma() { close(); }
 
-// for timer
-    virtual void handleTimer(s8 id);
-
 // for protocol
     virtual void loop(void);
     virtual int  init(void);
     virtual int  close(void);
     virtual int  reset(void);
     virtual int  getChannels(void);
-    virtual int  setPower(int power);
     virtual int  getInfo(s8 id, u8 *data);
     virtual void test(s8 id);
+    virtual u16  callState(void);
 
 private:
     u8   getCheckSum(u8 *data);
@@ -64,8 +62,6 @@ private:
     void init2(void);
     void init3(void);
     void setRFChannel(u8 address);
-    u16  callState(void);
-
 
 // variables
     DeviceNRF24L01  mDev;
@@ -73,15 +69,13 @@ private:
     u8   mChannelBuf[MAX_RF_CHANNELS];
     u8   mChannelCnt;
 
-    u8   mProtoOpt;
     u8   mPacketBuf[MAX_PACKET_SIZE];
     u8   mPacketSize;
     u16  mBindCtr;
     u32  mPacketCtr;
     u8   mAuxFlag;
-    u8   mRxTxAddrBuf[5];
+    u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
     u8   mState;
-    s8   mTmrState;
 
 protected:
 

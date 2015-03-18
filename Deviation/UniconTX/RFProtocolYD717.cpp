@@ -117,14 +117,11 @@ void RFProtocolYD717::sendPacket(u8 bind)
     // Check and adjust transmission power. We do this after
     // transmission to not bother with timeout after power
     // settings change -  we have plenty of time until next
-    // mPacketBuf.
-//    if (tx_power != Model.tx_power) {
-        //Keep transmit power updated
-//        tx_power = Model.tx_power;
-//        NRF24L01_SetPower(tx_power);
-//    }
-
-//    printf(F("SEND PACKET 2 : %x\n"), mDev.readReg(NRF24L01_17_FIFO_STATUS));
+    // packet
+    if (isRFPowerUpdated()) {
+        mDev.setRFPower(getRFPower());
+        clearRFPowerUpdated();
+    }
 }
 
 
@@ -158,7 +155,7 @@ void RFProtocolYD717::init1(void)
     mDev.writeReg(NRF24L01_04_SETUP_RETR, 0x1A); // 500uS retransmit t/o, 10 tries
     mDev.writeReg(NRF24L01_05_RF_CH, RF_CHANNEL);      // Channel 3C
     mDev.setBitrate(NRF24L01_BR_1M);             // 1Mbps
-    mDev.setPower(TXPOWER_100mW);
+    mDev.setRFPower(TXPOWER_100mW);
     mDev.writeReg(NRF24L01_07_STATUS, 0x70);     // Clear data ready, data sent, and retransmit
     mDev.writeReg(NRF24L01_0C_RX_ADDR_P2, 0xC3); // LSB byte of pipe 2 receive address
     mDev.writeReg(NRF24L01_0D_RX_ADDR_P3, 0xC4);
@@ -277,14 +274,6 @@ void RFProtocolYD717::test(s8 id)
 {
 }
 
-void RFProtocolYD717::handleTimer(s8 id)
-{
-    if (id == mTmrState) {
-        u16 time = callState();
-        mTmrState = after(time);
-    }
-}
-
 void RFProtocolYD717::loop(void)
 {
     update();
@@ -294,19 +283,19 @@ int RFProtocolYD717::init(void)
 {
     mPacketCtr = 0;
     mAuxFlag   = 0;
-    mTmrState  = -1;
 
     initRxTxAddr();
     init1();
     mState = YD717_INIT1;
 
-    mTmrState = after(INITIAL_WAIT_MS);
+    startState(INITIAL_WAIT_MS);
     return 0;
 }
 
 int RFProtocolYD717::close(void)
 {
     //printf(F("%08ld : %s\n"), millis(), __PRETTY_FUNCTION__);
+    RFProtocol::close();
     mDev.initialize();
     return (mDev.reset() ? 1L : -1L);
 }
@@ -319,12 +308,6 @@ int RFProtocolYD717::reset(void)
 int RFProtocolYD717::getChannels(void)
 {
     return 6;
-}
-
-int RFProtocolYD717::setPower(int power)
-{
-    mDev.setPower(power);
-    return 0;
 }
 
 int RFProtocolYD717::getInfo(s8 id, u8 *data)

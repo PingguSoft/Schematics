@@ -9,7 +9,11 @@
 
 u32  rand32_r(u32 *seed, u8 update);
 u32  rand32();
+
+#ifdef __DEBUG_PRINTF__
 void printf(char *fmt, ... );
 void printf(const __FlashStringHelper *fmt, ... );
-
+#else
+#define printf(...)
+#endif
 #endif
