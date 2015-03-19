@@ -177,8 +177,8 @@ void RFProtocolYD717::init1(void)
     mDev.writeReg(NRF24L01_1C_DYNPD, 0x3F);       // Enable dynamic payload length on all pipes
     mDev.writeReg(NRF24L01_1D_FEATURE, 0x07);     // Set feature bits on
 
-    mDev.writeRegisterMulti(NRF24L01_0A_RX_ADDR_P0, mRxTxAddrBuf, 5);
-    mDev.writeRegisterMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, 5);
+    mDev.writeRegMulti(NRF24L01_0A_RX_ADDR_P0, mRxTxAddrBuf, 5);
+    mDev.writeRegMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, 5);
 
     printf(F("init1 : %ld\n"), millis());
 }
@@ -195,16 +195,16 @@ void RFProtocolYD717::init2(void)
     else
         for(u8 i=0; i < 5; i++) bind_rx_tx_addr[i]  = 0x65;
 
-    mDev.writeRegisterMulti(NRF24L01_0A_RX_ADDR_P0, bind_rx_tx_addr, 5);
-    mDev.writeRegisterMulti(NRF24L01_10_TX_ADDR, bind_rx_tx_addr, 5);
+    mDev.writeRegMulti(NRF24L01_0A_RX_ADDR_P0, bind_rx_tx_addr, 5);
+    mDev.writeRegMulti(NRF24L01_10_TX_ADDR, bind_rx_tx_addr, 5);
     printf(F("init2 : %ld\n"), millis());
 }
 
 void RFProtocolYD717::init3(void)
 {
     // set rx/tx address for data phase
-    mDev.writeRegisterMulti(NRF24L01_0A_RX_ADDR_P0, mRxTxAddrBuf, 5);
-    mDev.writeRegisterMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, 5);
+    mDev.writeRegMulti(NRF24L01_0A_RX_ADDR_P0, mRxTxAddrBuf, 5);
+    mDev.writeRegMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, 5);
     printf(F("init3 : %ld\n"), millis());
 }
 
@@ -274,15 +274,9 @@ void RFProtocolYD717::test(s8 id)
 {
 }
 
-void RFProtocolYD717::loop(void)
-{
-    update();
-}
-
 int RFProtocolYD717::init(void)
 {
     mPacketCtr = 0;
-    mAuxFlag   = 0;
 
     initRxTxAddr();
     init1();

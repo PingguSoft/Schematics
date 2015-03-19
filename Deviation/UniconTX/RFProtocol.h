@@ -85,10 +85,6 @@ public:
     void injectControls(s16 *data, int size);
     s16  getControl(u8 ch);
 
-    void injectTrim(u8 trim, u8 val);
-    void injectTrims(u8 *data);
-    u8   getTrim(u8 trim);
-
     // power
     u8   getRFPower(void);
     bool isRFPowerUpdated(void);
@@ -118,7 +114,6 @@ private:
     u32  mProtoID;
     u32  mConID;
     s16  mBufControls[MAX_CHANNEL];
-    u8   mBufTrims[MAX_TRIM];
     s8   mTmrState;
     u8   mTXPower;
 };

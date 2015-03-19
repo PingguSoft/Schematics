@@ -43,4 +43,10 @@ typedef enum TxPower {
     TXPOWER_LAST,
 } TXPOWER_T;
 
+enum TXRX_State {
+    TXRX_OFF,
+    TX_EN,
+    RX_EN,
+};
+
 #endif

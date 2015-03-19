@@ -14,10 +14,6 @@ void RFProtocol::initVars(void)
     memset(mBufControls, 0, sizeof(mBufControls));
     mBufControls[CH_THROTTLE] = CHAN_MIN_VALUE;
 
-    mBufTrims[TRIM_RUDDER] = 0x0 >> 1;
-    mBufTrims[TRIM_ELEVATOR] = 0x0 >> 1;
-    mBufTrims[TRIM_AILERON] = 0x0 >> 1;
-
     mTmrState = -1;
     mTXPower  = TXPOWER_10mW;
 }
@@ -34,6 +30,7 @@ RFProtocol::~RFProtocol()
 
 void RFProtocol::loop(void)
 {
+    update();
 }
 
 int RFProtocol::init(void)
@@ -99,25 +96,9 @@ void RFProtocol::injectControls(s16 *data, int size)
         mBufControls[i] = *data++;
 }
 
-void RFProtocol::injectTrim(u8 trim, u8 val)
-{
-    mBufTrims[trim] =  val;
-}
-
-void RFProtocol::injectTrims(u8 *data)
-{
-    for (int i = 0; i < MAX_TRIM; i++)
-        mBufTrims[i] = *data;
-}
-
 s16 RFProtocol::getControl(u8 ch)
 {
     return mBufControls[ch];
-}
-
-u8 RFProtocol::getTrim(u8 trim)
-{
-    return mBufTrims[trim];
 }
 
 void RFProtocol::handleTimer(s8 id)
@@ -137,4 +118,3 @@ void RFProtocol::startState(unsigned long period)
 {
     mTmrState = after(period);
 }
-

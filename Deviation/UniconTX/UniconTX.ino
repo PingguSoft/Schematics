@@ -9,18 +9,19 @@
 #include "RFProtocolV2x2.h"
 #include "RFProtocolHiSky.h"
 #include "RFProtocolCFlie.h"
+#include "RFProtocolDevo.h"
 #include "SerialProtocol.h"
 
 
-SerialProtocol  mSerial;
-RFProtocol      *mRFProto = NULL;
+static SerialProtocol  mSerial;
+static RFProtocol      *mRFProto = NULL;
 
 u32 serialCallback(u8 cmd, u8 *data, u8 size)
 {
     u32 id;
     u8  ret = 0;
-    u8 	buf[5];
-    u8 	sz = 0;
+    u8  buf[5];
+    u8  sz = 0;
 
     switch (cmd) {
         case SerialProtocol::CMD_SET_RFPROTOCOL:
@@ -28,34 +29,43 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
                 delete mRFProto;
                 mRFProto = NULL;
             }
+            
             id = *(u32*)data;
-            if (RFProtocol::getModule(id) == RFProtocol::TX_NRF24L01) {
-                switch (RFProtocol::getProtocol(id)) {
-                    case RFProtocol::PROTO_NRF24L01_SYMAX:
-                        mRFProto = new RFProtocolSyma(id);
-                        ret = 1;
-                        break;
+            switch (RFProtocol::getModule(id)) {
+                case RFProtocol::TX_NRF24L01: {
+                    switch (RFProtocol::getProtocol(id)) {
+                        case RFProtocol::PROTO_NRF24L01_SYMAX:
+                            mRFProto = new RFProtocolSyma(id);
+                            ret = 1;
+                            break;
 
-                    case RFProtocol::PROTO_NRF24L01_YD717:
-                        mRFProto = new RFProtocolYD717(id);
-                        ret = 1;
-                        break;
+                        case RFProtocol::PROTO_NRF24L01_YD717:
+                            mRFProto = new RFProtocolYD717(id);
+                            ret = 1;
+                            break;
 
-                    case RFProtocol::PROTO_NRF24L01_V2x2:
-                        mRFProto = new RFProtocolV2x2(id);
-                        ret = 1;
-                        break;
+                        case RFProtocol::PROTO_NRF24L01_V2x2:
+                            mRFProto = new RFProtocolV2x2(id);
+                            ret = 1;
+                            break;
 
-                    case RFProtocol::PROTO_NRF24L01_HISKY:
-                        mRFProto = new RFProtocolHiSky(id);
-                        ret = 1;
-                        break;
+                        case RFProtocol::PROTO_NRF24L01_HISKY:
+                            mRFProto = new RFProtocolHiSky(id);
+                            ret = 1;
+                            break;
 
-                    case RFProtocol::PROTO_NRF24L01_CFLIE:
-                        mRFProto = new RFProtocolCFlie(id);
-                        ret = 1;
-                        break;
+                        case RFProtocol::PROTO_NRF24L01_CFLIE:
+                            mRFProto = new RFProtocolCFlie(id);
+                            ret = 1;
+                            break;
+                    }
                 }
+                break;
+
+                case RFProtocol::TX_CYRF6936:
+                    mRFProto = new RFProtocolDevo(id);
+                    ret = 1;
+                break;
             }
             mSerial.sendResponse(true, cmd, (u8*)&ret, sizeof(ret));
             break;
@@ -96,24 +106,18 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
             mSerial.sendResponse(true, cmd, buf, sz + 1);
             break;
 
-      	case SerialProtocol::CMD_GET_FREE_RAM:
-      		u16 ram = freeRam();
-      		mSerial.sendResponse(true, cmd, (u8*)&ram, sizeof(ram));
-	      	break;
+        case SerialProtocol::CMD_GET_FREE_RAM:
+            u16 ram = freeRam();
+            mSerial.sendResponse(true, cmd, (u8*)&ram, sizeof(ram));
+            break;
     }
     return ret;
 }
 
 void setup()
 {
-	mSerial.begin(57600);
+    mSerial.begin(57600);
     mSerial.setCallback(serialCallback);
-}
-
-int freeRam() {
-    extern int __heap_start, *__brkval;
-    int v;
-    return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
 void loop()
@@ -123,3 +127,8 @@ void loop()
         mRFProto->loop();
 }
 
+int freeRam() {
+    extern int __heap_start, *__brkval;
+    int v;
+    return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+}

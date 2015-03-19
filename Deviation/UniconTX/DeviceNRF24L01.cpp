@@ -22,7 +22,7 @@ void DeviceNRF24L01::initialize()
     pinMode(PIN_CE, OUTPUT);
 
     CS_HI();
-    digitalWrite(PIN_CE, HIGH);
+    CE_HI();
 
     SPI.begin();
     SPI.setBitOrder(MSBFIRST);
@@ -30,7 +30,6 @@ void DeviceNRF24L01::initialize()
     SPI.setClockDivider(SPI_CLOCK_DIV2);
 
     mRFsetup = 0x0F;
-    digitalWrite(PIN_CE, HIGH);
 }
 
 #define PROTOSPI_xfer   SPI.transfer
@@ -44,7 +43,7 @@ u8 DeviceNRF24L01::writeReg(u8 reg, u8 data)
     return res;
 }
 
-u8 DeviceNRF24L01::writeRegisterMulti(u8 reg, const u8 *data, u8 length)
+u8 DeviceNRF24L01::writeRegMulti(u8 reg, const u8 *data, u8 length)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(W_REGISTER | ( REGISTER_MASK & reg));
@@ -55,7 +54,7 @@ u8 DeviceNRF24L01::writeRegisterMulti(u8 reg, const u8 *data, u8 length)
     return res;
 }
 
-u8 DeviceNRF24L01::writeRegisterMulti_P(u8 reg, const u8 *data, u8 length)
+u8 DeviceNRF24L01::writeRegMulti_P(u8 reg, const u8 *data, u8 length)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(W_REGISTER | ( REGISTER_MASK & reg));
@@ -97,7 +96,7 @@ u8 DeviceNRF24L01::readReg(u8 reg)
     return data;
 }
 
-u8 DeviceNRF24L01::readRegisterMulti(u8 reg, u8 data[], u8 length)
+u8 DeviceNRF24L01::readRegMulti(u8 reg, u8 data[], u8 length)
 {
     CS_LO();
     u8 res = PROTOSPI_xfer(R_REGISTER | (REGISTER_MASK & reg));

@@ -3,10 +3,10 @@
 #include "utils.h"
 
 
-static u32 rand_seed = 0xb2c54a2ful;
+static const u32 rand_seed = 0xb2c54a2ful;
 // Linear feedback shift register with 32-bit Xilinx polinomial x^32 + x^22 + x^2 + x + 1
-static const uint32_t LFSR_FEEDBACK = 0x80200003ul;
-static const uint32_t LFSR_INTAP = 32-1;
+static const u32 LFSR_FEEDBACK = 0x80200003ul;
+static const u32 LFSR_INTAP = 32-1;
 
 
 static void update_lfsr(uint32_t *lfsr, uint8_t b)
@@ -19,8 +19,8 @@ static void update_lfsr(uint32_t *lfsr, uint8_t b)
 
 u32 rand32_r(u32 *seed, u8 update)
 {
-    if(! seed)
-        seed = &rand_seed;
+    if (!seed)
+        seed = (u32*)&rand_seed;
     update_lfsr(seed, update);
     return *seed;
 }

@@ -79,12 +79,6 @@ enum {
 };
 
 
-enum TXRX_State {
-    TXRX_OFF,
-    TX_EN,
-    RX_EN,
-};
-
 class DeviceNRF24L01
 {
     #define PIN_IRQ       2
@@ -100,12 +94,12 @@ public:
     void initialize();
     int  reset();
     u8   writeReg(u8 reg, u8 data);
-    u8   writeRegisterMulti(u8 reg, const u8 *data, u8 length);
-    u8   writeRegisterMulti_P(u8 reg, const u8 *data, u8 length);
+    u8   writeRegMulti(u8 reg, const u8 *data, u8 length);
+    u8   writeRegMulti_P(u8 reg, const u8 *data, u8 length);
     u8   writePayload(u8 *data, u8 len);
     u8   writePayload_P(const u8 *data, u8 length);
     u8   readReg(u8 reg);
-    u8   readRegisterMulti(u8 reg, u8 *data, u8 length);
+    u8   readRegMulti(u8 reg, u8 *data, u8 length);
     u8   readPayload(u8 *data, u8 len);
     u8   flushTx();
     u8   flushRx();

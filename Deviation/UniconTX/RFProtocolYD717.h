@@ -49,7 +49,6 @@ public:
     ~RFProtocolYD717() { close(); }
 
 // for protocol
-    virtual void loop(void);
     virtual int  init(void);
     virtual int  close(void);
     virtual int  reset(void);
@@ -78,11 +77,9 @@ private:
 // variables
     DeviceNRF24L01  mDev;
 
-    u8   mPacketBuf[MAX_PACKET_SIZE];
-    u8   mPacketSize;
-    u16  mBindCtr;
     u32  mPacketCtr;
-    u8   mAuxFlag;
+    u16  mBindCtr;
+    u8   mPacketBuf[MAX_PACKET_SIZE];
     u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
     u8   mState;
 

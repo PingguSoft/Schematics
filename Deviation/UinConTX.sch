@@ -9590,6 +9590,8 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 <part name="SUPPLY1" library="supply2" deviceset="GND" device=""/>
 <part name="J1" library="connector" deviceset="MICRO_USB_B_MALE_HIROSE_ZX80-B-5S" device=""/>
 <part name="GND1" library="SparkFun" deviceset="GND" device=""/>
+<part name="R11" library="SparkFun" deviceset="RESISTOR" device="0402" value="0"/>
+<part name="R18" library="SparkFun" deviceset="RESISTOR" device="0402" value="0"/>
 </parts>
 <sheets>
 <sheet>
@@ -9650,17 +9652,17 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 <attribute name="NAME" x="121.92" y="91.6686" size="1.778" layer="95"/>
 <attribute name="VALUE" x="130.048" y="91.44" size="1.778" layer="96"/>
 </instance>
-<instance part="R5" gate="G$1" x="127" y="88.9" smashed="yes">
-<attribute name="NAME" x="121.92" y="89.1286" size="1.778" layer="95"/>
-<attribute name="VALUE" x="130.048" y="88.9" size="1.778" layer="96"/>
-</instance>
-<instance part="R6" gate="G$1" x="127" y="86.36" smashed="yes">
+<instance part="R5" gate="G$1" x="127" y="86.36" smashed="yes">
 <attribute name="NAME" x="121.92" y="86.5886" size="1.778" layer="95"/>
 <attribute name="VALUE" x="130.048" y="86.36" size="1.778" layer="96"/>
 </instance>
-<instance part="R7" gate="G$1" x="127" y="83.82" smashed="yes">
-<attribute name="NAME" x="121.92" y="84.0486" size="1.778" layer="95"/>
-<attribute name="VALUE" x="130.048" y="83.82" size="1.778" layer="96"/>
+<instance part="R6" gate="G$1" x="127" y="78.74" smashed="yes">
+<attribute name="NAME" x="121.92" y="78.9686" size="1.778" layer="95"/>
+<attribute name="VALUE" x="130.048" y="78.74" size="1.778" layer="96"/>
+</instance>
+<instance part="R7" gate="G$1" x="127" y="71.12" smashed="yes">
+<attribute name="NAME" x="121.92" y="71.3486" size="1.778" layer="95"/>
+<attribute name="VALUE" x="130.048" y="71.12" size="1.778" layer="96"/>
 </instance>
 <instance part="R8" gate="G$1" x="127" y="114.3" smashed="yes">
 <attribute name="NAME" x="121.92" y="114.5286" size="1.778" layer="95"/>
@@ -9715,6 +9717,14 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 <instance part="SUPPLY1" gate="GND" x="246.38" y="27.94"/>
 <instance part="J1" gate="G$1" x="30.48" y="45.72" rot="MR0"/>
 <instance part="GND1" gate="1" x="45.72" y="33.02"/>
+<instance part="R11" gate="G$1" x="127" y="83.82" smashed="yes">
+<attribute name="NAME" x="121.92" y="84.0486" size="1.778" layer="95"/>
+<attribute name="VALUE" x="130.048" y="83.82" size="1.778" layer="96"/>
+</instance>
+<instance part="R18" gate="G$1" x="127" y="76.2" smashed="yes">
+<attribute name="NAME" x="121.92" y="76.4286" size="1.778" layer="95"/>
+<attribute name="VALUE" x="130.048" y="76.2" size="1.778" layer="96"/>
+</instance>
 </instances>
 <busses>
 </busses>
@@ -9911,7 +9921,9 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 <segment>
 <label x="111.76" y="83.82" size="1.778" layer="95"/>
 <pinref part="U1" gate="G$1" pin="PB5(SCK)"/>
-<wire x1="109.22" y1="83.82" x2="121.92" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="109.22" y1="83.82" x2="114.3" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="114.3" y1="83.82" x2="114.3" y2="71.12" width="0.1524" layer="91"/>
+<wire x1="114.3" y1="71.12" x2="121.92" y2="71.12" width="0.1524" layer="91"/>
 <pinref part="R7" gate="G$1" pin="1"/>
 </segment>
 <segment>
@@ -9931,8 +9943,8 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 </segment>
 <segment>
 <pinref part="R7" gate="G$1" pin="2"/>
-<wire x1="132.08" y1="83.82" x2="137.16" y2="83.82" width="0.1524" layer="91"/>
-<label x="142.748" y="83.82" size="1.27" layer="95" rot="R180" xref="yes"/>
+<wire x1="132.08" y1="71.12" x2="137.16" y2="71.12" width="0.1524" layer="91"/>
+<label x="142.748" y="71.12" size="1.27" layer="95" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="MISO" class="0">
@@ -9948,22 +9960,34 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 </segment>
 <segment>
 <pinref part="U1" gate="G$1" pin="PB4(MISO)"/>
-<wire x1="109.22" y1="86.36" x2="121.92" y2="86.36" width="0.1524" layer="91"/>
+<wire x1="109.22" y1="86.36" x2="116.84" y2="86.36" width="0.1524" layer="91"/>
+<wire x1="116.84" y1="86.36" x2="116.84" y2="78.74" width="0.1524" layer="91"/>
+<wire x1="116.84" y1="78.74" x2="121.92" y2="78.74" width="0.1524" layer="91"/>
 <label x="111.76" y="86.36" size="1.778" layer="95"/>
 <pinref part="R6" gate="G$1" pin="1"/>
+<wire x1="116.84" y1="78.74" x2="116.84" y2="76.2" width="0.1524" layer="91"/>
+<pinref part="R18" gate="G$1" pin="1"/>
+<wire x1="116.84" y1="76.2" x2="121.92" y2="76.2" width="0.1524" layer="91"/>
+<junction x="116.84" y="78.74"/>
 </segment>
 <segment>
 <pinref part="R6" gate="G$1" pin="2"/>
-<wire x1="132.08" y1="86.36" x2="137.16" y2="86.36" width="0.1524" layer="91"/>
-<label x="143.764" y="86.36" size="1.27" layer="95" rot="R180" xref="yes"/>
+<wire x1="132.08" y1="78.74" x2="137.16" y2="78.74" width="0.1524" layer="91"/>
+<label x="136.906" y="78.74" size="1.27" layer="95" xref="yes"/>
 </segment>
 </net>
 <net name="MOSI" class="0">
 <segment>
 <label x="111.76" y="88.9" size="1.778" layer="95"/>
 <pinref part="U1" gate="G$1" pin="PB3(MOSI/OC2)"/>
-<wire x1="109.22" y1="88.9" x2="121.92" y2="88.9" width="0.1524" layer="91"/>
+<wire x1="109.22" y1="88.9" x2="119.38" y2="88.9" width="0.1524" layer="91"/>
+<wire x1="119.38" y1="88.9" x2="119.38" y2="86.36" width="0.1524" layer="91"/>
 <pinref part="R5" gate="G$1" pin="1"/>
+<pinref part="R11" gate="G$1" pin="1"/>
+<wire x1="119.38" y1="86.36" x2="121.92" y2="86.36" width="0.1524" layer="91"/>
+<wire x1="121.92" y1="83.82" x2="119.38" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="119.38" y1="83.82" x2="119.38" y2="86.36" width="0.1524" layer="91"/>
+<junction x="119.38" y="86.36"/>
 </segment>
 <segment>
 <pinref part="SV2" gate="1" pin="4"/>
@@ -9977,8 +10001,8 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 </segment>
 <segment>
 <pinref part="R5" gate="G$1" pin="2"/>
-<wire x1="132.08" y1="88.9" x2="137.16" y2="88.9" width="0.1524" layer="91"/>
-<label x="143.764" y="88.9" size="1.27" layer="95" rot="R180" xref="yes"/>
+<wire x1="132.08" y1="86.36" x2="137.16" y2="86.36" width="0.1524" layer="91"/>
+<label x="143.764" y="86.36" size="1.27" layer="95" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="TXO" class="0">
@@ -10240,6 +10264,13 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 <pinref part="SV3" gate="1" pin="5"/>
 <wire x1="193.04" y1="86.36" x2="180.34" y2="86.36" width="0.1524" layer="91"/>
 <label x="185.42" y="86.36" size="1.778" layer="95"/>
+<label x="185.42" y="86.36" size="1.778" layer="95"/>
+<label x="185.42" y="86.36" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="R11" gate="G$1" pin="2"/>
+<wire x1="132.08" y1="83.82" x2="137.16" y2="83.82" width="0.1524" layer="91"/>
+<label x="143.51" y="83.82" size="1.27" layer="95" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="GIO1" class="0">
@@ -10247,6 +10278,11 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 <pinref part="SV3" gate="1" pin="6"/>
 <wire x1="193.04" y1="88.9" x2="180.34" y2="88.9" width="0.1524" layer="91"/>
 <label x="185.42" y="88.9" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="R18" gate="G$1" pin="2"/>
+<wire x1="132.08" y1="76.2" x2="137.16" y2="76.2" width="0.1524" layer="91"/>
+<label x="137.16" y="76.2" size="1.27" layer="95" xref="yes"/>
 </segment>
 </net>
 <net name="GIO2" class="0">
@@ -10322,8 +10358,8 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 </segment>
 <segment>
 <pinref part="U3" gate="G$1" pin="TX"/>
-<wire x1="170.18" y1="58.42" x2="152.4" y2="58.42" width="0.1524" layer="91"/>
-<label x="152.4" y="58.42" size="1.27" layer="95" xref="yes"/>
+<wire x1="170.18" y1="58.42" x2="162.56" y2="58.42" width="0.1524" layer="91"/>
+<label x="153.67" y="58.42" size="1.27" layer="95" xref="yes"/>
 </segment>
 </net>
 <net name="BT_RXD" class="0">

@@ -73,27 +73,6 @@ void RFProtocolCFlie::frac2float(s32 n, float* res)
     *((u32 *) res) = m;
 }
 
-u16 RFProtocolCFlie::getChannel(CH_T id)
-{
-    s32 ch = RFProtocol::getControl(id);
-    if (ch < CHAN_MIN_VALUE) {
-        ch = CHAN_MIN_VALUE;
-    } else if (ch > CHAN_MAX_VALUE) {
-        ch = CHAN_MAX_VALUE;
-    }
-
-    u16 ret = (s32)RFProtocol::getControl(id) * 450 / CHAN_MAX_VALUE + 500; // max/min servo range is +-125%
-    if (id == CH_THROTTLE)
-        ret = 1000 - ret;
-
-    if (ret < 0)
-        ret = 0;
-    else if (ret > 1000)
-        ret = 1000;
-    
-    return ret;
-}
-
 void RFProtocolCFlie::sendCmdPacket(void)
 {
     float x_roll, x_pitch, yaw;
@@ -215,9 +194,8 @@ void RFProtocolCFlie::init1(void)
     mDev.writeReg(NRF24L01_1C_DYNPD, 0x01);       // Enable Dynamic Payload Length on pipe 0
     mDev.writeReg(NRF24L01_1D_FEATURE, 0x06);     // Enable Dynamic Payload Length, enable Payload with ACK
 
-
-//    mDev.writeRegisterMulti(NRF24L01_0A_RX_ADDR_P0, rx_tx_addr, TX_ADDR_SIZE);
-    mDev.writeRegisterMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, ADDR_BUF_SIZE);
+    mDev.writeRegMulti(NRF24L01_0A_RX_ADDR_P0, mRxTxAddrBuf, ADDR_BUF_SIZE);
+    mDev.writeRegMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, ADDR_BUF_SIZE);
 
     printf(F("init1 : %ld\n"), millis());
 }
@@ -265,15 +243,12 @@ void RFProtocolCFlie::test(s8 id)
 {
 }
 
-void RFProtocolCFlie::loop(void)
-{
-    update();
-}
-
 int RFProtocolCFlie::init(void)
 {
     mPacketCtr = 0;
 
+    initRxTxAddr();
+    init1();
     startState(INITIAL_WAIT_MS);
     printf(F("init : %ld\n"), millis());
     return 0;

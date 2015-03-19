@@ -27,7 +27,6 @@ public:
     ~RFProtocolHiSky() { close(); }
 
 // for protocol
-    virtual void loop(void);
     virtual int  init(void);
     virtual int  close(void);
     virtual int  reset(void);
@@ -48,17 +47,16 @@ private:
 
 // variables
     DeviceNRF24L01  mDev;
-    u8   mCurChan;
-    u8   mChannelBuf[MAX_RF_CHANNELS];
-    u8   mPacketBuf[MAX_PACKET_SIZE];
-
-    u8   mBindingIdx;
-    u8   mBindingBufs[4][MAX_PACKET_SIZE];
-    u8   mCtr1ms;
-
-    u16  mBindCtr;
     u32  mPacketCtr;
+    u16  mBindCtr;
+    u8   mRFChanBufs[MAX_RF_CHANNELS];
+    u8   mPacketBuf[MAX_PACKET_SIZE];
+    u8   mBindingBufs[4][MAX_PACKET_SIZE];
     u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
+    
+    u8   mCurChan;
+    u8   mBindingIdx;
+    u8   mCtr1ms;
     u8   mState;
 protected:
 

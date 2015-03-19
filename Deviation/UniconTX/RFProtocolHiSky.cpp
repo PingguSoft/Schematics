@@ -18,11 +18,11 @@ void RFProtocolHiSky::buildRFChannels(u32 seed)
             continue;
         // Check that it's not duplicate and spread uniformly
         for (i = 0; i < idx; i++) {
-            if(mChannelBuf[i] == next_ch)
+            if(mRFChanBufs[i] == next_ch)
                 break;
-            if(mChannelBuf[i] <= 26)
+            if(mRFChanBufs[i] <= 26)
                 count_2_26++;
-            else if (mChannelBuf[i] <= 50)
+            else if (mRFChanBufs[i] <= 50)
                 count_27_50++;
             else
                 count_51_74++;
@@ -33,7 +33,7 @@ void RFProtocolHiSky::buildRFChannels(u32 seed)
           ||(next_ch >= 27 && next_ch <= 50 && count_27_50 < 8)
           ||(next_ch >= 51 && count_51_74 < 8))
         {
-            mChannelBuf[idx++] = next_ch;
+            mRFChanBufs[idx++] = next_ch;
         }
     }
 }
@@ -66,11 +66,11 @@ void RFProtocolHiSky::buildBindingPacket(void)
     }
     
     for(i = 0; i < 7; i++)
-        mBindingBufs[1][i+3] = mChannelBuf[i];
+        mBindingBufs[1][i+3] = mRFChanBufs[i];
     for(i = 0; i < 7; i++)
-        mBindingBufs[2][i+3] = mChannelBuf[i+7];
+        mBindingBufs[2][i+3] = mRFChanBufs[i+7];
     for(i = 0; i < 6; i++)
-        mBindingBufs[3][i+3] = mChannelBuf[i+14];
+        mBindingBufs[3][i+3] = mRFChanBufs[i+14];
 
     mBindingIdx = 0;
 }
@@ -127,6 +127,7 @@ void RFProtocolHiSky::buildDataPacket(void)
         mPacketBuf[9] |= (u8)((ch >> 2) & 0x0003);
         mPacketBuf[9] <<= 2;
     }
+    mPacketCtr++;
 }
 
 void RFProtocolHiSky::initRxTxAddr(void)
@@ -156,8 +157,8 @@ void RFProtocolHiSky::init1(void)
     mDev.initialize();
     mDev.writeReg(NRF24L01_02_EN_RXADDR, 0x01);                         // Enable p0 rx
     mDev.writeReg(NRF24L01_01_EN_AA, 0x00);                             // No Auto Acknoledgement
-    mDev.writeRegisterMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, ADDR_BUF_SIZE);
-    mDev.writeRegisterMulti(NRF24L01_0A_RX_ADDR_P0, mRxTxAddrBuf, ADDR_BUF_SIZE);
+    mDev.writeRegMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, ADDR_BUF_SIZE);
+    mDev.writeRegMulti(NRF24L01_0A_RX_ADDR_P0, mRxTxAddrBuf, ADDR_BUF_SIZE);
     mDev.writeReg(NRF24L01_11_RX_PW_P0, MAX_PACKET_SIZE);               // payload size = 10
     mDev.writeReg(NRF24L01_05_RF_CH, 81);                               // binding packet must be set in channel 81
 
@@ -187,7 +188,7 @@ u16 RFProtocolHiSky::callState(void)
         
     case 2:
         if (mBindCtr > 0) {
-            mDev.writeRegisterMulti_P(NRF24L01_10_TX_ADDR, BINDING_ADDR, 5);
+            mDev.writeRegMulti_P(NRF24L01_10_TX_ADDR, BINDING_ADDR, 5);
             mDev.writeReg(NRF24L01_05_RF_CH, 81);
         }
         break;
@@ -218,8 +219,8 @@ u16 RFProtocolHiSky::callState(void)
         break;
         
     case 6:
-        mDev.writeRegisterMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, 5);
-        mDev.writeReg(NRF24L01_05_RF_CH, mChannelBuf[mCurChan]);
+        mDev.writeRegMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, 5);
+        mDev.writeReg(NRF24L01_05_RF_CH, mRFChanBufs[mCurChan]);
         mCurChan++;
         if (mCurChan >= MAX_RF_CHANNELS)
             mCurChan = 0;
@@ -243,11 +244,6 @@ u16 RFProtocolHiSky::callState(void)
 
 void RFProtocolHiSky::test(s8 id)
 {
-}
-
-void RFProtocolHiSky::loop(void)
-{
-    update();
 }
 
 int RFProtocolHiSky::init(void)
@@ -297,7 +293,7 @@ int RFProtocolHiSky::getInfo(s8 id, u8 *data)
             break;
 
         case INFO_CHANNEL:
-            *data = mChannelBuf[mCurChan];
+            *data = mRFChanBufs[mCurChan];
             size = 1;
             break;
 

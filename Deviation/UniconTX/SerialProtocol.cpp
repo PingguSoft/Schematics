@@ -8,7 +8,7 @@
 #include "SerialProtocol.h"
 #include "utils.h"
 
-#define MAX_BUF_SIZE 128
+#define MAX_BUF_SIZE 64
 
 struct ringBuf {
     u8 buffer[MAX_BUF_SIZE];
@@ -18,7 +18,7 @@ struct ringBuf {
 
 struct ringBuf mRxRingBuf = { {0}, 0, 0 };
 struct ringBuf mTxRingBuf = { {0}, 0, 0 };
-u8 chkSumTX = 0;
+static u8 chkSumTX;
 
 void putChar(struct ringBuf *buf, u8 data)
 {

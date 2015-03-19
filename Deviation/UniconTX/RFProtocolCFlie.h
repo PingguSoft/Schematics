@@ -37,7 +37,6 @@ public:
     ~RFProtocolCFlie() { close(); }
 
 // for protocol
-    virtual void loop(void);
     virtual int  init(void);
     virtual int  close(void);
     virtual int  reset(void);
@@ -50,7 +49,6 @@ private:
     u8   checkStatus(void);
     void initRxTxAddr(void);
     void init1(void);
-    u16  getChannel(CH_T id);
     void setRateAndCh(u8 rate, u8 channel);
     void sendSearchPacket(void);
     void frac2float(s32 n, float* res);
@@ -58,13 +56,14 @@ private:
 
 // variables
     DeviceNRF24L01  mDev;
+
+    u32  mPacketCtr;
+    u16  mBindCtr;
+    u8   mPacketBuf[MAX_PACKET_SIZE];    
+    u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
+    
     u8   mDataRate;
     u8   mCurChan;
-    u8   mPacketBuf[MAX_PACKET_SIZE];
-
-    u16  mBindCtr;
-    u32  mPacketCtr;
-    u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
     u8   mState;
 
 protected:

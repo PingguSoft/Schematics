@@ -1,5 +1,5 @@
-#ifndef ProtocolSyma_h
-#define ProtocolSyma_h
+#ifndef _PROTOCOL_SYMA_H_
+#define _PROTOCOL_SYMA_H_
 
 #include "DeviceNRF24L01.h"
 #include "RFProtocol.h"
@@ -39,7 +39,6 @@ public:
     ~RFProtocolSyma() { close(); }
 
 // for protocol
-    virtual void loop(void);
     virtual int  init(void);
     virtual int  close(void);
     virtual int  reset(void);
@@ -64,16 +63,16 @@ private:
 
 // variables
     DeviceNRF24L01  mDev;
-    u8   mCurChan;
-    u8   mChannelBuf[MAX_RF_CHANNELS];
-    u8   mChannelCnt;
-
-    u8   mPacketBuf[MAX_PACKET_SIZE];
-    u8   mPacketSize;
-    u16  mBindCtr;
     u32  mPacketCtr;
-    u8   mAuxFlag;
+    u16  mBindCtr;
+    u8   mRFChanBufs[MAX_RF_CHANNELS];
+    u8   mPacketBuf[MAX_PACKET_SIZE];
     u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
+    
+    u8   mCurChan;
+    u8   mChannelCnt;
+    u8   mPacketSize;
+    u8   mAuxFlag;
     u8   mState;
 
 protected:

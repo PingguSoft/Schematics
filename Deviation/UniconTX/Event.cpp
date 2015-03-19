@@ -53,28 +53,28 @@ uint8_t Event::update(unsigned long now)
       diff = now - lastEventTime;
   }
 
-	if (diff >= period)
-	{
-		switch (eventType)
-		{
-			case EVENT_EVERY:
+    if (diff >= period)
+    {
+        switch (eventType)
+        {
+            case EVENT_EVERY:
                 if (callback)
-    				(*callback)();
+                    (*callback)();
                 ret = 1;
-				break;
+                break;
 
-			case EVENT_OSCILLATE:
-				pinState = ! pinState;
-				digitalWrite(pin, pinState);
-				break;
-		}
-		lastEventTime = now;
-		count++;
-	}
-	if (repeatCount > -1 && count >= repeatCount)
-	{
-		eventType = EVENT_NONE;
-	}
+            case EVENT_OSCILLATE:
+                pinState = ! pinState;
+                digitalWrite(pin, pinState);
+                break;
+        }
+        lastEventTime = now;
+        count++;
+    }
+    if (repeatCount > -1 && count >= repeatCount)
+    {
+        eventType = EVENT_NONE;
+    }
 
     return ret;
 }

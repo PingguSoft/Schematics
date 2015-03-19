@@ -135,7 +135,7 @@ void RFProtocolV2x2::sendPacket(u8 bind)
     // hops to a new frequency as soon as valid packet
     // received it does not matter that the packet is
     // not the same one repeated twice - nobody checks this
-    u8 rf_ch = mChannelBuf[mCurChan >> 1];
+    u8 rf_ch = mRFChanBufs[mCurChan >> 1];
     mCurChan = (mCurChan + 1) & 0x1F;
     mDev.writeReg(NRF24L01_05_RF_CH, rf_ch);
     mDev.flushTx();
@@ -204,9 +204,9 @@ void RFProtocolV2x2::init1(void)
     mDev.writeReg(NRF24L01_16_RX_PW_P5, MAX_PACKET_SIZE);
     mDev.writeReg(NRF24L01_17_FIFO_STATUS, 0x00);           // Just in case, no real bits to write here
 
-    mDev.writeRegisterMulti_P(NRF24L01_0A_RX_ADDR_P0, RX_TX_ADDR, 5);
-    mDev.writeRegisterMulti_P(NRF24L01_0B_RX_ADDR_P1, RX_P1_ADDR, 5);
-    mDev.writeRegisterMulti_P(NRF24L01_10_TX_ADDR, RX_TX_ADDR, 5);
+    mDev.writeRegMulti_P(NRF24L01_0A_RX_ADDR_P0, RX_TX_ADDR, 5);
+    mDev.writeRegMulti_P(NRF24L01_0B_RX_ADDR_P1, RX_P1_ADDR, 5);
+    mDev.writeRegMulti_P(NRF24L01_10_TX_ADDR, RX_TX_ADDR, 5);
 
     printf(F("init1 : %ld\n"), millis());
 }
@@ -256,7 +256,7 @@ void RFProtocolV2x2::setTxID(u32 id)
     
     for (u8 i = 0; i < 16; ++i) {
         u8 val = pgm_read_byte(fh_row[i] + increment);
-        mChannelBuf[i] = (val & 0x0f) ? val : val - 3;  // Strange avoidance of channels divisible by 16
+        mRFChanBufs[i] = (val & 0x0f) ? val : val - 3;  // Strange avoidance of channels divisible by 16
     }
 }
 
@@ -313,11 +313,6 @@ void RFProtocolV2x2::test(s8 id)
 {
 }
 
-void RFProtocolV2x2::loop(void)
-{
-    update();
-}
-
 int RFProtocolV2x2::init(void)
 {
     mPacketCtr = 0;
@@ -365,7 +360,7 @@ int RFProtocolV2x2::getInfo(s8 id, u8 *data)
             break;
 
         case INFO_CHANNEL:
-            *data = mChannelBuf[mCurChan];
+            *data = mRFChanBufs[mCurChan];
             size = 1;
             break;
 
