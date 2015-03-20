@@ -18,9 +18,8 @@ static const PROGMEM u8 SOPCODES[][8] = {
 
 void RFProtocolDevo::buildScramblePacket(void)
 {
-    u8 i;
-    for(i = 0; i < 15; i++) {
-        mPacketBuf[i + 1] ^= mMFGID[i % 4];
+    for(u8 i = 0; i < 15; i++) {
+        mPacketBuf[i + 1] ^= mMfgIDBuf[i % 4];
     }
 }
 
@@ -28,7 +27,7 @@ void RFProtocolDevo::addPacketSuffix(void)
 {
     u8 bind_state;
     
-    if (use_fixed_id) {
+    if (mBoolFixedID) {
         if (mBindCtr > 0) {
             bind_state = 0xc0;
         } else {
@@ -38,24 +37,26 @@ void RFProtocolDevo::addPacketSuffix(void)
         bind_state = 0x00;
     }
     mPacketBuf[10] = bind_state | (PKTS_PER_CHANNEL - mPacketCtr - 1);
-    mPacketBuf[11] = *(radio_ch_ptr + 1);
-    mPacketBuf[12] = *(radio_ch_ptr + 2);
-    mPacketBuf[13] = fixed_id  & 0xff;
-    mPacketBuf[14] = (fixed_id >> 8) & 0xff;
-    mPacketBuf[15] = (fixed_id >> 16) & 0xff;
+    mPacketBuf[11] = *(mCurRFChPtr + 1);
+    mPacketBuf[12] = *(mCurRFChPtr + 2);
+    mPacketBuf[13] = mFixedID  & 0xff;
+    mPacketBuf[14] = (mFixedID >> 8) & 0xff;
+    mPacketBuf[15] = (mFixedID >> 16) & 0xff;
 }
 
 void RFProtocolDevo::buildBeaconPacket(int upper)
 {
-    mPacketBuf[0] = ((mConChanCnt << 4) | 0x07);
-    u8 enable = 0;
-    int max = 8;
+    u8  enable = 0;
+    int max    = 8;
     int offset = 0;
+
+    mPacketBuf[0] = ((mConChanCnt << 4) | 0x07);    
     if (upper) {
         mPacketBuf[0] += 1;
         max = 4;
         offset = 8;
     }
+
     for(int i = 0; i < max; i++) {
 #ifdef BOGUS
         if (i + offset < Model.mConChanCnt && Model.limits[i+offset].flags & CH_FAILSAFE_EN) {
@@ -63,7 +64,7 @@ void RFProtocolDevo::buildBeaconPacket(int upper)
             mPacketBuf[i+1] = Model.limits[i+offset].failsafe;
         } else {
 #endif /* BOGUS */
-            mPacketBuf[i+1] = 0;
+            mPacketBuf[i + 1] = 0;
 #ifdef BOGUS
         }
 #endif /* BOGUS */
@@ -77,19 +78,19 @@ void RFProtocolDevo::buildBindPacket(void)
     mPacketBuf[0] = (mConChanCnt << 4) | 0x0a;
     mPacketBuf[1] = mBindCtr & 0xff;
     mPacketBuf[2] = (mBindCtr >> 8);
-    mPacketBuf[3] = *radio_ch_ptr;
-    mPacketBuf[4] = *(radio_ch_ptr + 1);
-    mPacketBuf[5] = *(radio_ch_ptr + 2);
-    mPacketBuf[6] = mMFGID[0];
-    mPacketBuf[7] = mMFGID[1];
-    mPacketBuf[8] = mMFGID[2];
-    mPacketBuf[9] = mMFGID[3];
+    mPacketBuf[3] = *mCurRFChPtr;
+    mPacketBuf[4] = *(mCurRFChPtr + 1);
+    mPacketBuf[5] = *(mCurRFChPtr + 2);
+    mPacketBuf[6] = mMfgIDBuf[0];
+    mPacketBuf[7] = mMfgIDBuf[1];
+    mPacketBuf[8] = mMfgIDBuf[2];
+    mPacketBuf[9] = mMfgIDBuf[3];
     addPacketSuffix();
     //The fixed-id portion is scrambled in the bind mPacketBuf
     //I assume it is ignored
-    mPacketBuf[13] ^= mMFGID[0];
-    mPacketBuf[14] ^= mMFGID[1];
-    mPacketBuf[15] ^= mMFGID[2];
+    mPacketBuf[13] ^= mMfgIDBuf[0];
+    mPacketBuf[14] ^= mMfgIDBuf[1];
+    mPacketBuf[15] ^= mMfgIDBuf[2];
 }
 
 void RFProtocolDevo::buildDataPacket(void)
@@ -107,8 +108,8 @@ void RFProtocolDevo::buildDataPacket(void)
         } else {
             idx = i;
         }
+
         value = (s32)getControl(idx) * 0x640 / CHAN_MAX_VALUE;
-        
         if(value < 0) {
             value = -value;
             sign |= 1 << (7 - i);
@@ -124,7 +125,7 @@ void RFProtocolDevo::buildDataPacket(void)
     addPacketSuffix();
 }
 
-s32 RFProtocolDevo::float_to_int(u8 *ptr)
+s32 RFProtocolDevo::convFloatStr2Int(u8 *ptr)
 {
     s32 value = 0;
     int seen_decimal = 0;
@@ -169,9 +170,9 @@ void RFProtocolDevo::parseTelemetryPacket(u8 *mPacketBuf)
         return;
     const u8 *update = NULL;
     buildScramblePacket(); //This will unscramble the mPacketBuf
-    if (mPacketBuf[13] != (fixed_id  & 0xff)
-        || mPacketBuf[14] != ((fixed_id >> 8) & 0xff)
-        || mPacketBuf[15] != ((fixed_id >> 16) & 0xff))
+    if (mPacketBuf[13] != (mFixedID  & 0xff)
+        || mPacketBuf[14] != ((mFixedID >> 8) & 0xff)
+        || mPacketBuf[15] != ((mFixedID >> 16) & 0xff))
     {
         return;
     }
@@ -220,11 +221,11 @@ void RFProtocolDevo::parseTelemetryPacket(u8 *mPacketBuf)
     }
     if (mPacketBuf[0] == 0x34) {
         update = gpsaltpkt;
-        Telemetry.gps.altitude = float_to_int(mPacketBuf+1);
+        Telemetry.gps.altitude = convFloatStr2Int(mPacketBuf+1);
     }
     if (mPacketBuf[0] == 0x35) {
         update = gpsspeedpkt;
-        Telemetry.gps.velocity = float_to_int(mPacketBuf+7);
+        Telemetry.gps.velocity = convFloatStr2Int(mPacketBuf+7);
     }
     if (mPacketBuf[0] == 0x36) {
         update = gpstimepkt;
@@ -248,13 +249,15 @@ void RFProtocolDevo::parseTelemetryPacket(u8 *mPacketBuf)
 void RFProtocolDevo::setBoundSOPCodes(void)
 {
     /* crc == 0 isn't allowed, so use 1 if the math results in 0 */
-    u8 crc = (mMFGID[0] + (mMFGID[1] >> 6) + mMFGID[2]);
-    if(! crc)
+    
+    u8 crc    = (mMfgIDBuf[0] + (mMfgIDBuf[1] >> 6) + mMfgIDBuf[2]);
+    u8 sopidx = (0xff &((mMfgIDBuf[0] << 2) + mMfgIDBuf[1] + mMfgIDBuf[2])) % 10;
+
+    if(!crc)
         crc = 1;
-    u8 sopidx = (0xff &((mMFGID[0] << 2) + mMFGID[1] + mMFGID[2])) % 10;
     mDev.setTxRxMode(TX_EN);
     mDev.setCRCSeed((crc << 8) + crc);
-    mDev.setSOPCode(SOPCODES[sopidx]);
+    mDev.setSOPCode_P(SOPCODES[sopidx]);
     mDev.writeReg(CYRF_03_TX_CFG, 0x08 | getRFPower());
 }
 
@@ -263,10 +266,10 @@ void RFProtocolDevo::init1(void)
     /* Initialise CYRF chip */
     mDev.reset();
 
-    mDev.readMfgID(mMFGID);
+    mDev.readMfgID(mMfgIDBuf);
     mDev.setTxRxMode(TX_EN);
     mDev.setCRCSeed(0x0000);
-    mDev.setSOPCode(SOPCODES[0]);
+    mDev.setSOPCode_P(SOPCODES[0]);
     setRadioChannels();
     
     mDev.writeReg(CYRF_1D_MODE_OVERRIDE, 0x38);
@@ -293,16 +296,6 @@ void RFProtocolDevo::init1(void)
 void RFProtocolDevo::setRadioChannels(void)
 {
     mDev.findBestChannels(mRFChanBufs, 3, 4, 4, 80);
-
-#ifdef BOGUS
-    int i;
-    printf("Radio Channels:");
-    for (i = 0; i < 3; i++) {
-        printf(" %02x", mRFChanBufs[i]);
-    }
-    printf("\n");
-#endif /* BOGUS */
-    
     //Makes code a little easier to duplicate these here
     mRFChanBufs[3] = mRFChanBufs[0];
     mRFChanBufs[4] = mRFChanBufs[1];
@@ -316,6 +309,7 @@ void RFProtocolDevo::buildPacket(void)
             buildBindPacket();
             mState = DEVO_BIND_SENDCH;
             break;
+            
         case DEVO_BIND_SENDCH:
             mBindCtr--;
             buildDataPacket();
@@ -327,6 +321,7 @@ void RFProtocolDevo::buildPacket(void)
                 mState = DEVO_BIND;
             }
             break;
+            
         case DEVO_BOUND:
         case DEVO_BOUND_1:
         case DEVO_BOUND_2:
@@ -347,6 +342,7 @@ void RFProtocolDevo::buildPacket(void)
                 }
             }
             break;
+            
         case DEVO_BOUND_10:
             buildBeaconPacket(mConChanCnt > 8 ? failsafe_pkt : 0);
             failsafe_pkt = failsafe_pkt ? 0 : 1;
@@ -354,6 +350,7 @@ void RFProtocolDevo::buildPacket(void)
             mState = DEVO_BOUND_1;
             break;
     }
+    
     mPacketCtr++;
     if(mPacketCtr == PKTS_PER_CHANNEL)
         mPacketCtr = 0;
@@ -421,12 +418,12 @@ u16 RFProtocolDevo::callState2(void)
         if(mPacketCtr == 0) {
             //Keep tx power updated
             mDev.writeReg(CYRF_03_TX_CFG, 0x08 | Model.tx_power);
-            radio_ch_ptr = radio_ch_ptr == &mRFChanBufs[2] ? mRFChanBufs : radio_ch_ptr + 1;
-            CYRF_ConfigRFChannel(*radio_ch_ptr);
+            mCurRFChPtr = mCurRFChPtr == &mRFChanBufs[2] ? mRFChanBufs : mCurRFChPtr + 1;
+            CYRF_ConfigRFChannel(*mCurRFChPtr);
         }
         mTxState = 0;
     }
-    return PACKET_PERIOD_MS;
+    return PACKET_PERIOD_uS;
 }
 #endif /* BOGUS */
 
@@ -440,13 +437,13 @@ u16 RFProtocolDevo::callState(void)
         mTxState = 1;
         buildPacket();
         mDev.writePayload(mPacketBuf, MAX_PACKET_SIZE);
-        return PACKET_PERIOD_MS;
+        return PACKET_PERIOD_uS;
     }
     
     mTxState = 0;
     while (! (mDev.readReg(0x04) & 0x02)) {
         if(++i > NUM_WAIT_LOOPS)
-            return PACKET_PERIOD_MS;
+            return PACKET_PERIOD_uS;
     }
     if (mState == DEVO_BOUND) {
         /* exit binding mState */
@@ -456,10 +453,10 @@ u16 RFProtocolDevo::callState(void)
     if(mPacketCtr == 0) {
         //Keep tx power updated
         mDev.writeReg(CYRF_03_TX_CFG, 0x08 | getRFPower());
-        radio_ch_ptr = radio_ch_ptr == &mRFChanBufs[2] ? mRFChanBufs : radio_ch_ptr + 1;
-        mDev.setRFChannel(*radio_ch_ptr);
+        mCurRFChPtr = (mCurRFChPtr == &mRFChanBufs[2]) ? mRFChanBufs : (mCurRFChPtr + 1);
+        mDev.setRFChannel(*mCurRFChPtr);
     }
-    return PACKET_PERIOD_MS;
+    return PACKET_PERIOD_uS;
 }
 
 void RFProtocolDevo::test(s8 id)
@@ -470,33 +467,33 @@ int RFProtocolDevo::init(void)
 {
     init1();
 
-    use_fixed_id = 0;
+    mBoolFixedID = 0;
     failsafe_pkt = 0;
-    radio_ch_ptr = mRFChanBufs;
+    mCurRFChPtr = mRFChanBufs;
 //    memset(&Telemetry, 0, sizeof(Telemetry));
 
-    mDev.setRFChannel(*radio_ch_ptr);
+    mDev.setRFChannel(*mCurRFChPtr);
     mPacketCtr = 0;
     mConChanIdx = 0;
     mTxState = 0;
 
-    if(1) {  // ! Model.fixed_id
-        fixed_id = ((u32)(mRFChanBufs[0] ^ mMFGID[0] ^ mMFGID[3]) << 16)
-                 | ((u32)(mRFChanBufs[1] ^ mMFGID[1] ^ mMFGID[4]) << 8)
-                 | ((u32)(mRFChanBufs[2] ^ mMFGID[2] ^ mMFGID[5]) << 0);
-        fixed_id = fixed_id % 1000000;
+    if(1) {  // ! Model.mFixedID
+        mFixedID = ((u32)(mRFChanBufs[0] ^ mMfgIDBuf[0] ^ mMfgIDBuf[3]) << 16)
+                 | ((u32)(mRFChanBufs[1] ^ mMfgIDBuf[1] ^ mMfgIDBuf[4]) << 8)
+                 | ((u32)(mRFChanBufs[2] ^ mMfgIDBuf[2] ^ mMfgIDBuf[5]) << 0);
+        mFixedID = mFixedID % 1000000;
         mBindCtr = MAX_BIND_COUNT;
         mState   = DEVO_BIND;
         //PROTOCOL_SetBindState(0x1388 * 2400 / 1000); //msecs
     } else {
-        //fixed_id = Model.fixed_id;
-        use_fixed_id = 1;
+        //mFixedID = Model.mFixedID;
+        mBoolFixedID = 1;
         mState = DEVO_BOUND_1;
         mBindCtr = 0;
         setBoundSOPCodes();
     }
 
-    startState(INITIAL_WAIT_MS);
+    startState(INITIAL_WAIT_uS);
     printf(F("init : %ld\n"), millis());
     return 0;
 }

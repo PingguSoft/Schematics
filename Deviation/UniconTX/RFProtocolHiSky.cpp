@@ -239,7 +239,7 @@ u16 RFProtocolHiSky::callState(void)
         break;
     }
 
-    return PACKET_PERIOD_MS;    // send 1 binding packet and 1 data packet per 9ms
+    return PACKET_PERIOD_uS;    // send 1 binding packet and 1 data packet per 9ms
 }
 
 void RFProtocolHiSky::test(s8 id)
@@ -261,7 +261,7 @@ int RFProtocolHiSky::init(void)
         mBindCtr = MAX_BIND_COUNT;
     }
 
-    startState(INITIAL_WAIT_MS);
+    startState(INITIAL_WAIT_uS);
     printf(F("init : %ld\n"), millis());
     return 0;
 }

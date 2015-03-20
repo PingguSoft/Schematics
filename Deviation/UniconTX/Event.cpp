@@ -36,7 +36,7 @@ Event::Event(void)
 
 uint8_t Event::update(void)
 {
-    unsigned long now = millis();
+    unsigned long now = micros();
     return update(now);
 }
 

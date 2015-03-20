@@ -14,8 +14,8 @@ class RFProtocolDevo : public RFProtocol
 #define ADDR_BUF_SIZE           5
 #define MFG_ID_SIZE             6
 
-#define PACKET_PERIOD_MS        1   // 1200us
-#define INITIAL_WAIT_MS         2   // 2400us
+#define PACKET_PERIOD_uS     1200
+#define INITIAL_WAIT_uS      2400
 
 #define MAX_RF_CHANNELS         5
 
@@ -55,7 +55,7 @@ private:
     void buildBeaconPacket(int upper);
     void buildBindPacket(void);
     void buildDataPacket(void);
-    s32  float_to_int(u8 *ptr);
+    s32  convFloatStr2Int(u8 *ptr);
     void parseTelemetryPacket(u8 *mPacketBuf);
     void setBoundSOPCodes(void);
     void setRadioChannels(void);
@@ -68,7 +68,7 @@ private:
     u8   mRFChanBufs[MAX_RF_CHANNELS];
     u8   mPacketBuf[MAX_PACKET_SIZE];
     u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
-    u8   mMFGID[MFG_ID_SIZE];
+    u8   mMfgIDBuf[MFG_ID_SIZE];
 
     u8   mPacketCtr;    
     u8   mConChanIdx;
@@ -77,10 +77,10 @@ private:
     u8   mState;
     u8   mTxState;
 
-    u8 use_fixed_id;
+    u8 mBoolFixedID;
     u8 failsafe_pkt;
-    u32 fixed_id;
-    u8 *radio_ch_ptr;
+    u32 mFixedID;
+    u8 *mCurRFChPtr;
 
 protected:
 

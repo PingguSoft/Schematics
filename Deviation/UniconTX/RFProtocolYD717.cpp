@@ -228,13 +228,13 @@ u16 RFProtocolYD717::callState(void)
     case YD717_BIND2:
         if (mBindCtr == 0) {
             if (checkStatus() == PKT_PENDING)
-                return PACKET_CHKTIME_MS;       // packet send not yet complete
+                return PACKET_CHKTIME_uS;       // packet send not yet complete
             init3();                            // change to data phase rx/tx address
             sendPacket(0);
             mState = YD717_BIND3;
         } else {
             if (checkStatus() == PKT_PENDING)
-                return PACKET_CHKTIME_MS;       // packet send not yet complete
+                return PACKET_CHKTIME_uS;       // packet send not yet complete
             sendPacket(1);
             mBindCtr--;
         }
@@ -243,7 +243,7 @@ u16 RFProtocolYD717::callState(void)
     case YD717_BIND3:
         switch (checkStatus()) {
         case PKT_PENDING:
-            return PACKET_CHKTIME_MS;           // packet send not yet complete
+            return PACKET_CHKTIME_uS;           // packet send not yet complete
         case PKT_ACKED:
             mState = YD717_DATA;
             printf(F("Bind Done : %ld\n"), millis());
@@ -262,12 +262,12 @@ u16 RFProtocolYD717::callState(void)
         update_telemetry();
 #endif
         if (checkStatus() == PKT_PENDING)
-            return PACKET_CHKTIME_MS;           // packet send not yet complete
+            return PACKET_CHKTIME_uS;           // packet send not yet complete
 
         sendPacket(0);
         break;
     }
-    return PACKET_PERIOD_MS;
+    return PACKET_PERIOD_uS;
 }
 
 void RFProtocolYD717::test(s8 id)
@@ -282,7 +282,7 @@ int RFProtocolYD717::init(void)
     init1();
     mState = YD717_INIT1;
 
-    startState(INITIAL_WAIT_MS);
+    startState(INITIAL_WAIT_uS);
     return 0;
 }
 

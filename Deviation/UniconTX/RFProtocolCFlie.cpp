@@ -217,7 +217,7 @@ u16 RFProtocolCFlie::callState(void)
     case CFLIE_SEARCH:
         switch (checkStatus()) {
         case PKT_PENDING:
-            return PACKET_CHK_MS;               // packet send not yet complete
+            return PACKET_CHK_uS;               // packet send not yet complete
 
         case PKT_ACKED:
             mState = CFLIE_DATA;
@@ -231,12 +231,12 @@ u16 RFProtocolCFlie::callState(void)
 
     case CFLIE_DATA:
         if (checkStatus() == PKT_PENDING)
-            return PACKET_CHK_MS;               // packet send not yet complete
+            return PACKET_CHK_uS;               // packet send not yet complete
         sendCmdPacket();
         break;
     }
 
-    return PACKET_PERIOD_MS;
+    return PACKET_PERIOD_uS;
 }
 
 void RFProtocolCFlie::test(s8 id)
@@ -249,7 +249,7 @@ int RFProtocolCFlie::init(void)
 
     initRxTxAddr();
     init1();
-    startState(INITIAL_WAIT_MS);
+    startState(INITIAL_WAIT_uS);
     printf(F("init : %ld\n"), millis());
     return 0;
 }

@@ -11,9 +11,10 @@ class RFProtocolYD717 : public RFProtocol
 #define MAX_PACKET_SIZE      9  // YD717 packets have 8-byte payload, Syma X4 is 9
 #define MAX_BIND_COUNT      60
 
-#define PACKET_PERIOD_MS     8
-#define INITIAL_WAIT_MS     50
-#define PACKET_CHKTIME_MS    5  // Time to wait if packet not yet acknowledged or timed out
+#define PACKET_PERIOD_uS  8000
+#define INITIAL_WAIT_uS  50000
+#define PACKET_CHKTIME_uS 5000  // Time to wait if packet not yet acknowledged or timed out
+
 #define ADDR_BUF_SIZE        5
 
 // Stock tx fixed frequency is 0x3C. Receiver only binds on this freq.

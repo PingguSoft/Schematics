@@ -11,16 +11,16 @@ class RFProtocolSyma : public RFProtocol
 #define MAX_PACKET_SIZE     16  // X11,X12,X5C-1 10-byte, X5C 16-byte
 #define MAX_BIND_COUNT     345
 
-#define PACKET_PERIOD_MS     4
-#define INITIAL_WAIT_MS      1
-#define FIRST_PACKET_MS     12
+#define PACKET_PERIOD_uS  4000
+#define INITIAL_WAIT_uS    500
+#define FIRST_PACKET_uS  12000
+
 #define ADDR_BUF_SIZE        5
+#define MAX_RF_CHANNELS     17
 
 #define FLAG_FLIP         0x01
 #define FLAG_VIDEO        0x02
 #define FLAG_PICTURE      0x04
-
-#define MAX_RF_CHANNELS     17
 
 enum {
     SYMAX_INIT1 = 0,

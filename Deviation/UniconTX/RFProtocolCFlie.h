@@ -10,9 +10,9 @@ class RFProtocolCFlie : public RFProtocol
 #define MAX_PACKET_SIZE     15
 #define MAX_BIND_COUNT      60
 
-#define PACKET_PERIOD_MS    10
-#define PACKET_CHK_MS        1
-#define INITIAL_WAIT_MS     50
+#define PACKET_PERIOD_uS 10000
+#define PACKET_CHK_uS     1000
+#define INITIAL_WAIT_uS  50000
 
 #define ADDR_BUF_SIZE        5
 #define MAX_RF_CHANNELS     20

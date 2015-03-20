@@ -10,9 +10,9 @@ class RFProtocolHiSky : public RFProtocol
 #define MAX_PACKET_SIZE     10
 #define MAX_BIND_COUNT     800
 
-#define PACKET_PERIOD_MS     1
-#define PACKET_CHKTIME       1
-#define INITIAL_WAIT_MS      1
+#define PACKET_PERIOD_uS     1000
+#define INITIAL_WAIT_uS      1000
+
 #define ADDR_BUF_SIZE        5
 #define MAX_RF_CHANNELS     20
 

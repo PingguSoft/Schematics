@@ -324,7 +324,7 @@ u16 RFProtocolSyma::callState(void)
     case SYMAX_INIT1:
         init2();
         mState = SYMAX_BIND2;
-        return FIRST_PACKET_MS;
+        return FIRST_PACKET_uS;
         break;
 
     case SYMAX_BIND2:
@@ -348,7 +348,7 @@ u16 RFProtocolSyma::callState(void)
         sendPacket(0);
         break;
     }
-    return PACKET_PERIOD_MS;
+    return PACKET_PERIOD_uS;
 }
 
 void RFProtocolSyma::test(s8 id)
@@ -363,7 +363,7 @@ int RFProtocolSyma::init(void)
     init1();
     mState = SYMAX_INIT1;
 
-    startState(INITIAL_WAIT_MS);
+    startState(INITIAL_WAIT_uS);
     printf(F("init : %ld\n"), millis());
     return 0;
 }

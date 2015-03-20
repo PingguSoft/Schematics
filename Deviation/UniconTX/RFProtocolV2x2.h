@@ -10,10 +10,10 @@ class RFProtocolV2x2 : public RFProtocol
 #define MAX_PACKET_SIZE     16
 #define MAX_BIND_COUNT    1000
 
-#define PACKET_PERIOD_MS     4
-#define PACKET_CHKTIME       1
-#define INITIAL_WAIT_MS     50
-#define FIRST_PACKET_MS     12
+#define PACKET_PERIOD_uS  4000
+#define PACKET_CHKTIME_uS  100
+#define INITIAL_WAIT_uS  50000
+
 #define ADDR_BUF_SIZE        3
 
 // Every second

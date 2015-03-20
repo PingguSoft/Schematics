@@ -281,7 +281,7 @@ u16 RFProtocolV2x2::callState(void)
 
     case V202_BIND2:
         if (mPacketSent && checkStatus() != PKT_ACKED) {
-            return PACKET_CHKTIME;
+            return PACKET_CHKTIME_uS;
         }
         sendPacket(1);
         if (--mBindCtr == 0) {
@@ -301,12 +301,12 @@ u16 RFProtocolV2x2::callState(void)
             mAuxFlag ^= V2x2_FLAG_LED;
         }
         if (mPacketSent && checkStatus() != PKT_ACKED) {
-            return PACKET_CHKTIME;
+            return PACKET_CHKTIME_uS;
         }
         sendPacket(0);
         break;
     }
-    return PACKET_PERIOD_MS;
+    return PACKET_PERIOD_uS;
 }
 
 void RFProtocolV2x2::test(s8 id)
@@ -328,7 +328,7 @@ int RFProtocolV2x2::init(void)
         mBindCtr = BLINK_COUNT;
     }
     initRxTxAddr();
-    startState(INITIAL_WAIT_MS);
+    startState(INITIAL_WAIT_uS);
     printf(F("init : %ld\n"), millis());
     return 0;
 }
