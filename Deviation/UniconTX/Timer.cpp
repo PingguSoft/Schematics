@@ -126,7 +126,7 @@ void Timer::stop(int8_t id)
 
 void Timer::update(void)
 {
-    unsigned long now = millis();
+    unsigned long now = micros();
     update(now);
 }
 
