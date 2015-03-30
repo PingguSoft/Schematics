@@ -12,13 +12,16 @@
 #include "RFProtocolDevo.h"
 #include "SerialProtocol.h"
 
-
 static SerialProtocol  mSerial;
-static RFProtocol      *mRFProto = NULL;
+static u8 mBaudAckLen;
+static u8 mBaudChkCtr = 0;
+static u8 mBaudAckStr[12];
 
+static RFProtocol      *mRFProto = NULL;
 u32 serialCallback(u8 cmd, u8 *data, u8 size)
 {
     u32 id;
+    u16 ram;
     u8  ret = 0;
     u8  buf[5];
     u8  sz = 0;
@@ -67,7 +70,8 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
                     ret = 1;
                 break;
             }
-            mSerial.sendResponse(true, cmd, (u8*)&ret, sizeof(ret));
+            //mSerial.sendResponse(true, cmd, (u8*)&ret, sizeof(ret));
+            mSerial.sendResponse(true, cmd, (u8*)mBaudAckStr, mBaudAckLen);
             break;
 
         case SerialProtocol::CMD_START_RF:
@@ -107,8 +111,20 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
             break;
 
         case SerialProtocol::CMD_GET_FREE_RAM:
-            u16 ram = freeRam();
+            ram = freeRam();
             mSerial.sendResponse(true, cmd, (u8*)&ram, sizeof(ram));
+            break;
+
+        case SerialProtocol::CMD_CHANGE_BAUD:
+            for (u8 i = 0; i < 3; i++) {
+                mSerial.sendString_P(PSTR("AT"));
+                delay(1000);
+            }
+            strncpy_P((char*)mBaudAckStr, PSTR("AT+BAUD"), 7);
+            mBaudAckStr[7] = *data;
+            mBaudAckStr[8] = 0;
+            mSerial.sendString((char*)mBaudAckStr);
+            delay(1000);
             break;
     }
     return ret;
@@ -122,6 +138,31 @@ void setup()
 
 void loop()
 {
+    if (mBaudChkCtr == 0) {
+        for ( ; mBaudChkCtr < 2; ) {
+            mSerial.sendString_P(PSTR("AT"));
+            delay(1000);
+            mBaudAckLen = mSerial.getString(mBaudAckStr);
+            if (mBaudAckLen < 2 || strncmp_P((const char*)mBaudAckStr, PSTR("OK"), 2)) {
+                mSerial.begin(9600);
+                delay(1000);
+                mBaudChkCtr++;
+            } else
+                break;
+        }
+
+        if (mBaudChkCtr > 0) {
+            mSerial.sendString_P(PSTR("AT+NAMESMART100"));
+            delay(1000);
+            mSerial.sendString_P(PSTR("AT+BAUD7"));
+            delay(1000);
+            mBaudAckLen = mSerial.getString(mBaudAckStr);
+        }
+        mBaudChkCtr++;
+        mSerial.begin(57600);
+        delay(1000);
+    }
+
     mSerial.handleRX();
     if (mRFProto)
         mRFProto->loop();

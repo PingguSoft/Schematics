@@ -93,10 +93,60 @@ void SerialProtocol::begin(u32 baud)
 {
     u8 h = ((F_CPU  / 4 / baud -1) / 2) >> 8;
     u8 l = ((F_CPU  / 4 / baud -1) / 2);
+
+    UCSR0B = 0;
+
+    memset(&mRxRingBuf, 0, sizeof(mRxRingBuf));
+    memset(&mTxRingBuf, 0, sizeof(mTxRingBuf));
+    
     UCSR0A = (1<<U2X0);
     UBRR0H = h;
     UBRR0L = l;
     UCSR0B |= (1<<RXEN0)|(1<<TXEN0)|(1<<RXCIE0);
+}
+
+void SerialProtocol::sendString_P(const char *fmt, ...)
+{
+    char buf[128]; // resulting string limited to 128 chars
+
+    va_list args;
+    va_start (args, fmt);
+
+#ifdef __AVR__
+    vsnprintf_P(buf, sizeof(buf), (const char *)fmt, args); // progmem for AVR
+#else
+    vsnprintf(buf, sizeof(buf), (const char *)fmt, args); // for the rest of the world
+#endif
+    va_end(args);
+
+    for (u8 i = 0; i < strlen(buf); i++)
+        putChar(&mTxRingBuf, buf[i]);
+    flushTX();
+}
+
+void SerialProtocol::sendString(char *fmt, ...)
+{
+    char buf[128]; // resulting string limited to 128 chars
+    va_list args;
+    
+    va_start (args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    for (u8 i = 0; i < strlen(buf); i++)
+        putChar(&mTxRingBuf, buf[i]);
+    flushTX();
+}
+
+
+u8 SerialProtocol::getString(u8 *buf)
+{
+    u8 size = available(&mRxRingBuf);
+
+    for (u8 i = 0; i < size; i++)
+        *buf++ = getChar(&mRxRingBuf);
+    
+    return size;
 }
 
 void SerialProtocol::setCallback(u32 (*callback)(u8 cmd, u8 *data, u8 size))

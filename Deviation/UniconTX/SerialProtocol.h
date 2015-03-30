@@ -3,6 +3,7 @@
 
 #include "Common.h"
 #include "utils.h"
+#include <stdarg.h>
 
 #define MAX_PACKET_SIZE 32
 
@@ -18,6 +19,7 @@ public:
         CMD_INJECT_CONTROLS,    // 12ch data : throttle, rudder, elevator, aileron, aux1..8
         CMD_GET_INFO,
         CMD_GET_FREE_RAM,
+        CMD_CHANGE_BAUD,
         CMD_TEST = 110,
     } CMD_T;
 
@@ -30,7 +32,10 @@ public:
     void evalCommand(u8 cmd, u8 *data, u8 size);
     void setCallback(u32 (*callback)(u8 cmd, u8 *data, u8 size));
 
-
+    void sendString_P(const char *fmt, ...);
+    void sendString(char *fmt, ...);
+    u8   getString(u8 *buf);
+    
 private:
     typedef enum
     {
