@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <avr/pgmspace.h>
+#include <avr/wdt.h>
 #include <SPI.h>
 
 #include "common.h"
@@ -14,7 +15,7 @@
 
 static SerialProtocol  mSerial;
 static u8 mBaudAckLen;
-static u8 mBaudChkCtr = 0;
+static u8 mBaudChkCtr;
 static u8 mBaudAckStr[12];
 
 static RFProtocol      *mRFProto = NULL;
@@ -116,15 +117,19 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
             break;
 
         case SerialProtocol::CMD_CHANGE_BAUD:
+            mSerial.clearRX();
+            mSerial.clearTX();
             for (u8 i = 0; i < 3; i++) {
                 mSerial.sendString_P(PSTR("AT"));
-                delay(1000);
+                delay(1050);
             }
             strncpy_P((char*)mBaudAckStr, PSTR("AT+BAUD"), 7);
             mBaudAckStr[7] = *data;
             mBaudAckStr[8] = 0;
             mSerial.sendString((char*)mBaudAckStr);
-            delay(1000);
+            delay(1050);
+            mBaudAckLen = mSerial.getString(mBaudAckStr);
+            while(1);
             break;
     }
     return ret;
@@ -134,6 +139,7 @@ void setup()
 {
     mSerial.begin(57600);
     mSerial.setCallback(serialCallback);
+    mBaudChkCtr = 0;
 }
 
 void loop()
@@ -141,11 +147,11 @@ void loop()
     if (mBaudChkCtr == 0) {
         for ( ; mBaudChkCtr < 2; ) {
             mSerial.sendString_P(PSTR("AT"));
-            delay(1000);
+            delay(1050);
             mBaudAckLen = mSerial.getString(mBaudAckStr);
             if (mBaudAckLen < 2 || strncmp_P((const char*)mBaudAckStr, PSTR("OK"), 2)) {
                 mSerial.begin(9600);
-                delay(1000);
+                delay(500);
                 mBaudChkCtr++;
             } else
                 break;
@@ -153,14 +159,23 @@ void loop()
 
         if (mBaudChkCtr > 0) {
             mSerial.sendString_P(PSTR("AT+NAMESMART100"));
-            delay(1000);
+            delay(1050);
             mSerial.sendString_P(PSTR("AT+BAUD7"));
-            delay(1000);
+            delay(1050);
+            mBaudAckLen = mSerial.getString(mBaudAckStr);
+
+            mSerial.begin(57600);
+            delay(500);
+
+            mSerial.sendString_P(PSTR("AT"));
+            delay(1050);
+            mSerial.sendString_P(PSTR("AT"));
+            delay(1050);
             mBaudAckLen = mSerial.getString(mBaudAckStr);
         }
-        mBaudChkCtr++;
         mSerial.begin(57600);
-        delay(1000);
+        delay(500);
+        mBaudChkCtr++;
     }
 
     mSerial.handleRX();

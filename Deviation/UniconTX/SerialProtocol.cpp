@@ -94,15 +94,36 @@ void SerialProtocol::begin(u32 baud)
     u8 h = ((F_CPU  / 4 / baud -1) / 2) >> 8;
     u8 l = ((F_CPU  / 4 / baud -1) / 2);
 
+    cli();
     UCSR0B = 0;
-
     memset(&mRxRingBuf, 0, sizeof(mRxRingBuf));
     memset(&mTxRingBuf, 0, sizeof(mTxRingBuf));
+
+    u8 data;
+    for (u8 i = 0; i < 32; i++)
+        data = UDR0;
     
     UCSR0A = (1<<U2X0);
     UBRR0H = h;
     UBRR0L = l;
     UCSR0B |= (1<<RXEN0)|(1<<TXEN0)|(1<<RXCIE0);
+    UCSR0C = (1<<UCSZ00) | (1<<UCSZ01);
+    sei();
+}
+
+void SerialProtocol::clearTX(void)
+{
+    cli();
+    UCSR0B &= ~(1<<UDRIE0);
+    memset(&mTxRingBuf, 0, sizeof(mTxRingBuf));
+    sei();
+}
+
+void SerialProtocol::clearRX(void)
+{
+    cli();
+    memset(&mRxRingBuf, 0, sizeof(mRxRingBuf));
+    sei();
 }
 
 void SerialProtocol::sendString_P(const char *fmt, ...)

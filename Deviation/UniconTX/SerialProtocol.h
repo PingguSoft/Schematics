@@ -35,6 +35,8 @@ public:
     void sendString_P(const char *fmt, ...);
     void sendString(char *fmt, ...);
     u8   getString(u8 *buf);
+    void clearTX(void);
+    void clearRX(void);
     
 private:
     typedef enum
