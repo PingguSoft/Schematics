@@ -17,21 +17,6 @@ class RFProtocolCFlie : public RFProtocol
 #define ADDR_BUF_SIZE        5
 #define MAX_RF_CHANNELS     20
 
-
-// Packet ack status values
-enum {
-    PKT_PENDING = 0,
-    PKT_ACKED,
-    PKT_TIMEOUT
-};
-
-enum {
-    CFLIE_INIT_SEARCH = 0,
-    CFLIE_INIT_DATA,
-    CFLIE_SEARCH,
-    CFLIE_DATA = 0x10
-};
-
 public:
     RFProtocolCFlie(u32 id):RFProtocol(id) { }
     ~RFProtocolCFlie() { close(); }
@@ -63,7 +48,7 @@ private:
     u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
     
     u8   mDataRate;
-    u8   mCurChan;
+    u8   mCurRFChan;
     u8   mState;
 
 protected:

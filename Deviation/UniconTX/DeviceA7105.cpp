@@ -151,6 +151,9 @@ int DeviceA7105::reset()
     writeReg(0x00, 0x00);
     delayMicroseconds(1000);
 
+    // enable 4 wires SPI, GIO1 is connected to MISO
+    writeReg(A7105_0B_GPIO1_PIN1, 0x19);
+
     setTxRxMode(TXRX_OFF);
     int res = (readReg(0x10) == 0x9E);
     strobe(A7105_STANDBY);

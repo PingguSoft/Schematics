@@ -3,11 +3,43 @@
 #include "utils.h"
 
 
+#define MAX_BIND_COUNT      60
+#define PACKET_PERIOD_uS  8000
+#define INITIAL_WAIT_uS  50000
+#define PACKET_CHKTIME_uS 5000  // Time to wait if packet not yet acknowledged or timed out
+
+// Stock tx fixed frequency is 0x3C. Receiver only binds on this freq.
+#define RF_CHANNEL          0x3C
+
+#define YD717_FLAG_FLIP     0x0F
+#define YD717_FLAG_LIGHT    0x10
+
+// Packet ack status values
+enum {
+    PKT_PENDING = 0,
+    PKT_ACKED,
+    PKT_TIMEOUT
+};
+
+enum {
+    YD717_INIT1 = 0,
+    YD717_BIND2,
+    YD717_BIND3,
+    YD717_DATA  = 0x10
+};
+
+enum {
+    PROTO_OPT_YD717       = 0,
+    PROTO_OPT_SKY_WALKER  = 1,
+    PROTO_OPT_XINXUN      = 2,
+    PROTO_OPT_NI_HUI      = 3,
+    PROTO_OPT_SYMA_X4     = 4,
+};
+
 u8 RFProtocolYD717::checkStatus()
 {
     u8 stat = mDev.readReg(NRF24L01_07_STATUS);
 
-//    printf(F("checkStatus :%x\n"), stat);
     switch (stat & (BV(NRF24L01_07_TX_DS) | BV(NRF24L01_07_MAX_RT))) 
     {
     case BV(NRF24L01_07_TX_DS):
@@ -19,7 +51,7 @@ u8 RFProtocolYD717::checkStatus()
     return PKT_PENDING;
 }
 
-u8 RFProtocolYD717::getControl(CH_T id)
+u8 RFProtocolYD717::getControl(u8 id)
 {
     s32 ch = RFProtocol::getControl(id);
     if (ch < CHAN_MIN_VALUE) {
@@ -42,7 +74,7 @@ void RFProtocolYD717::getControls(u8* throttle, u8* rudder, u8* elevator, u8* ai
     *throttle = getControl(CH_THROTTLE);
 
     // Channel 4
-    if(getProtocolOpt() == FORMAT_XINXUN) {
+    if(getProtocolOpt() == PROTO_OPT_XINXUN) {
       *rudder = getControl(CH_RUDDER);
       *rudder_trim = (0xff - *rudder) >> 1;
     } else {
@@ -69,11 +101,6 @@ void RFProtocolYD717::getControls(u8* throttle, u8* rudder, u8* elevator, u8* ai
       *flags &= ~YD717_FLAG_LIGHT;
     else
       *flags |= YD717_FLAG_LIGHT;
-
-
-//    printf(F("ail %3d+%3d, ele %3d+%3d, thr %3d, rud %3d+%3d, flip enable %d\n"),
-//            *aileron, *aileron_trim, *elevator, *elevator_trim, *throttle,
-//            *rudder, *rudder_trim, *flags);
 }
 
 void RFProtocolYD717::sendPacket(u8 bind)
@@ -85,10 +112,10 @@ void RFProtocolYD717::sendPacket(u8 bind)
         mPacketBuf[3]= mRxTxAddrBuf[3];
         mPacketBuf[4] = 0x56;
         mPacketBuf[5] = 0xAA;
-        mPacketBuf[6] = (getProtocolOpt() == FORMAT_NI_HUI) ? 0x00 : 0x32;
+        mPacketBuf[6] = (getProtocolOpt() == PROTO_OPT_NI_HUI) ? 0x00 : 0x32;
         mPacketBuf[7] = 0x00;
     } else {
-        if (getProtocolOpt() == FORMAT_YD717)
+        if (getProtocolOpt() == PROTO_OPT_YD717)
             getControls(&mPacketBuf[0], &mPacketBuf[1], &mPacketBuf[3], &mPacketBuf[4], &mPacketBuf[7], &mPacketBuf[6], &mPacketBuf[2], &mPacketBuf[5]);
         else
             getControls(&mPacketBuf[0], &mPacketBuf[1], &mPacketBuf[3], &mPacketBuf[4], &mPacketBuf[7], &mPacketBuf[2], &mPacketBuf[5], &mPacketBuf[6]);
@@ -97,7 +124,7 @@ void RFProtocolYD717::sendPacket(u8 bind)
     // clear mPacketBuf status bits and TX FIFO
     mDev.writeReg(NRF24L01_07_STATUS, (BV(NRF24L01_07_TX_DS) | BV(NRF24L01_07_MAX_RT)));
 
-    if(getProtocolOpt() == FORMAT_YD717) {
+    if(getProtocolOpt() == PROTO_OPT_YD717) {
         mDev.writePayload(mPacketBuf, 8);
     } else {
         mPacketBuf[8] = mPacketBuf[0];  // checksum
@@ -138,7 +165,6 @@ void RFProtocolYD717::initRxTxAddr(void)
         mRxTxAddrBuf[i] = lfsr & 0xff;
         rand32_r(&lfsr, i);
     }
-    printf(F("ID:%08lx\n"), lfsr);    
 }
 
 void RFProtocolYD717::init1(void)
@@ -179,8 +205,6 @@ void RFProtocolYD717::init1(void)
 
     mDev.writeRegMulti(NRF24L01_0A_RX_ADDR_P0, mRxTxAddrBuf, 5);
     mDev.writeRegMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, 5);
-
-    printf(F("init1 : %ld\n"), millis());
 }
 
 void RFProtocolYD717::init2(void)
@@ -188,16 +212,15 @@ void RFProtocolYD717::init2(void)
     // for bind packets set address to prearranged value known to receiver
     u8 bind_rx_tx_addr[5];
     
-    if (getProtocolOpt() == FORMAT_SYMA_X4)
+    if (getProtocolOpt() == PROTO_OPT_SYMA_X4)
         for(u8 i=0; i < 5; i++) bind_rx_tx_addr[i]  = 0x60;
-    else if (getProtocolOpt() == FORMAT_NI_HUI)
+    else if (getProtocolOpt() == PROTO_OPT_NI_HUI)
         for(u8 i=0; i < 5; i++) bind_rx_tx_addr[i]  = 0x64;
     else
         for(u8 i=0; i < 5; i++) bind_rx_tx_addr[i]  = 0x65;
 
     mDev.writeRegMulti(NRF24L01_0A_RX_ADDR_P0, bind_rx_tx_addr, 5);
     mDev.writeRegMulti(NRF24L01_10_TX_ADDR, bind_rx_tx_addr, 5);
-    printf(F("init2 : %ld\n"), millis());
 }
 
 void RFProtocolYD717::init3(void)
@@ -205,7 +228,6 @@ void RFProtocolYD717::init3(void)
     // set rx/tx address for data phase
     mDev.writeRegMulti(NRF24L01_0A_RX_ADDR_P0, mRxTxAddrBuf, 5);
     mDev.writeRegMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, 5);
-    printf(F("init3 : %ld\n"), millis());
 }
 
 #ifdef YD717_TELEMETRY
@@ -246,7 +268,6 @@ u16 RFProtocolYD717::callState(void)
             return PACKET_CHKTIME_uS;           // packet send not yet complete
         case PKT_ACKED:
             mState = YD717_DATA;
-            printf(F("Bind Done : %ld\n"), millis());
             break;
         case PKT_TIMEOUT:
             init2();                            // change to bind rx/tx address
@@ -288,7 +309,6 @@ int RFProtocolYD717::init(void)
 
 int RFProtocolYD717::close(void)
 {
-    //printf(F("%08ld : %s\n"), millis(), __PRETTY_FUNCTION__);
     RFProtocol::close();
     mDev.initialize();
     return (mDev.reset() ? 1L : -1L);
@@ -306,22 +326,26 @@ int RFProtocolYD717::getChannels(void)
 
 int RFProtocolYD717::getInfo(s8 id, u8 *data)
 {
-    u8 size = 0;
-    switch (id) {
-        case INFO_STATE:
-            *data = mState;
-            size = 1;
-            break;
+    u8 size;
 
-        case INFO_CHANNEL:
-            *data = RF_CHANNEL;
-            size = 1;
-            break;
+    size = RFProtocol::getInfo(id, data);
+    if (size == 0) {
+        switch (id) {
+            case INFO_STATE:
+                *data = mState;
+                size = 1;
+                break;
 
-        case INFO_PACKET_CTR:
-            size = sizeof(mPacketCtr);
-            *((u32*)data) = mPacketCtr;
-            break;
+            case INFO_CHANNEL:
+                *data = RF_CHANNEL;
+                size = 1;
+                break;
+
+            case INFO_PACKET_CTR:
+                size = sizeof(mPacketCtr);
+                *((u32*)data) = mPacketCtr;
+                break;
+        }
     }
     return size;
 }

@@ -100,12 +100,12 @@ public:
     u8   setRFPower(u8 power);
     void setTxRxMode(enum TXRX_State);
     void writeID(u32 id);
+    u8   strobe(u8 state);
     
 // To enable radio transmit after WritePayload you need to turn the radio
 //void PulseCE();
 
 private:
-    u8   strobe(u8 state);
 
 // variables
 

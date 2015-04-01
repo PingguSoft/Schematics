@@ -2,6 +2,29 @@
 #include "RFProtocolDevo.h"
 #include "utils.h"
 
+#define PKTS_PER_CHANNEL        4
+#define MAX_BIND_COUNT     0x1388
+#define TELEMETRY_ENABLE     0x30
+
+#define PACKET_PERIOD_uS     1200
+#define INITIAL_WAIT_uS      2400
+
+enum PktState {
+    DEVO_BIND,
+    DEVO_BIND_SENDCH,
+    DEVO_BOUND,
+    DEVO_BOUND_1,
+    DEVO_BOUND_2,
+    DEVO_BOUND_3,
+    DEVO_BOUND_4,
+    DEVO_BOUND_5,
+    DEVO_BOUND_6,
+    DEVO_BOUND_7,
+    DEVO_BOUND_8,
+    DEVO_BOUND_9,
+    DEVO_BOUND_10,
+};
+
 static const PROGMEM u8 SOPCODES[][8] = {
     /* Note these are in order transmitted (LSB 1st) */
     /* 0 */ {0x3C,0x37,0xCC,0x91,0xE2,0xF8,0xCC,0x91}, //0x91CCF8E291CC373C
@@ -97,19 +120,11 @@ void RFProtocolDevo::buildDataPacket(void)
 {
     s32 value;
     u8 i;
-    u8 tblCH[] = { CH_ELEVATOR, CH_AILERON, CH_THROTTLE, CH_RUDDER };
     u8 sign = 0x0b;
-    u8 idx;
     
     mPacketBuf[0] = (mConChanCnt << 4) | (0x0b + mConChanIdx);
     for (i = 0; i < 4; i++) {
-        if (mConChanIdx == 0) {
-            idx = tblCH[i];
-        } else {
-            idx = i;
-        }
-
-        value = (s32)getControl(idx) * 0x640 / CHAN_MAX_VALUE;
+        value = (s32)getControlByOrder(i) * 0x640 / CHAN_MAX_VALUE;
         if(value < 0) {
             value = -value;
             sign |= 1 << (7 - i);
@@ -494,7 +509,7 @@ int RFProtocolDevo::init(void)
     }
 
     startState(INITIAL_WAIT_uS);
-    printf(F("init : %ld\n"), millis());
+
     return 0;
 }
 
@@ -519,27 +534,26 @@ int RFProtocolDevo::getChannels(void)
 
 int RFProtocolDevo::getInfo(s8 id, u8 *data)
 {
-    u8 size = 0;
-    switch (id) {
-        case INFO_STATE:
-            *data = mState;
-            size = 1;
-            break;
+    u8 size;
+    
+    size = RFProtocol::getInfo(id, data);
+    if (size == 0) {
+        switch (id) {
+            case INFO_STATE:
+                *data = mState;
+                size = 1;
+                break;
 
-        case INFO_CHANNEL:
-            *data = mRFChanBufs[0];
-            size = 1;
-            break;
+            case INFO_CHANNEL:
+                *data = mRFChanBufs[0];
+                size = 1;
+                break;
 
-        case INFO_PACKET_CTR:
-            size = sizeof(mPacketCtr);
-            *((u32*)data) = mPacketCtr;
-            break;
-
-        case INFO_ID:
-            size = 4;
-            *((u32*)data) = (u32)getProtoID();
-            break;
+            case INFO_PACKET_CTR:
+                size = sizeof(mPacketCtr);
+                *((u32*)data) = mPacketCtr;
+                break;
+        }
     }
     return size;
 }

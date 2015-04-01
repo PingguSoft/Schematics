@@ -2,30 +2,50 @@
 #include "RFProtocolSyma.h"
 #include "utils.h"
 
+#define PAYLOADSIZE         10  // receive data pipes set to this size, but unused
+#define MAX_BIND_COUNT      345
+
+#define PACKET_PERIOD_uS    4000
+#define INITIAL_WAIT_uS     500
+#define FIRST_PACKET_uS     12000
+
+#define FLAG_FLIP           0x01
+#define FLAG_VIDEO          0x02
+#define FLAG_PICTURE        0x04
+
+#define PROTO_OPT_X5C_X2    0x01
+
+enum {
+    SYMAX_INIT1 = 0,
+    SYMAX_BIND2,
+    SYMAX_BIND3,
+    SYMAX_DATA  = 0x10
+};
+
+
 u8 RFProtocolSyma::getCheckSum(u8 *data)
 {
     u8 sum = data[0];
 
     for (int i=1; i < mPacketSize-1; i++)
-        if (getProtocolOpt() == FORMAT_X5C_X2)
+        if (getProtocolOpt() == PROTO_OPT_X5C_X2)
             sum += data[i];
         else
             sum ^= data[i];
 
-    return sum + ((getProtocolOpt() == FORMAT_X5C_X2) ? 0 : 0x55);
+    return sum + ((getProtocolOpt() == PROTO_OPT_X5C_X2) ? 0 : 0x55);
 }
 
 u8 RFProtocolSyma::checkStatus()
 {
     u8 stat = mDev.readReg(NRF24L01_07_STATUS);
-    printf(F("checkStatus :%x\n"), stat);
 
     return stat;
 }
 
 
 #define BABS(X) (((X) < 0) ? -(u8)(X) : (X))
-u8 RFProtocolSyma::getChannel(CH_T id)
+u8 RFProtocolSyma::getChannel(u8 id)
 {
     s32 ch = RFProtocol::getControl(id);
     if (ch < CHAN_MIN_VALUE) {
@@ -126,7 +146,7 @@ void RFProtocolSyma::buildPacket(u8 bind)
 
 void RFProtocolSyma::sendPacket(u8 bind)
 {
-    if (getProtocolOpt() == FORMAT_X5C_X2)
+    if (getProtocolOpt() == PROTO_OPT_X5C_X2)
       buildPacketX5C(bind);
     else
       buildPacket(bind);
@@ -134,13 +154,13 @@ void RFProtocolSyma::sendPacket(u8 bind)
     // clear mPacketBuf status bits and TX FIFO
     mDev.writeReg(NRF24L01_07_STATUS, 0x70);
     mDev.writeReg(NRF24L01_00_CONFIG, 0x2e);
-    mDev.writeReg(NRF24L01_05_RF_CH, mRFChanBufs[mCurChan]);
+    mDev.writeReg(NRF24L01_05_RF_CH, mRFChanBufs[mCurRFChan]);
     mDev.flushTx();
     mDev.writePayload(mPacketBuf, mPacketSize);
 
 
     if (mPacketCtr++ % 2) {   // use each channel twice
-        mCurChan = (mCurChan + 1) % mChannelCnt;
+        mCurRFChan = (mCurRFChan + 1) % mRFChanCnt;
     }
 
 //    printf(F("SEND PACKET bind:%d :%d\n"), bind, mPacketCtr);
@@ -177,8 +197,6 @@ void RFProtocolSyma::initRxTxAddr(void)
         mRxTxAddrBuf[i] = lfsr & 0xff;
         rand32_r(&lfsr, i);
     }
-
-    printf(F("ID:%08lx\n"), lfsr);
 }
 
 static const PROGMEM u8 BIND_RX_TX_ADDR[] = {0xab,0xac,0xad,0xae,0xaf};
@@ -197,7 +215,7 @@ void RFProtocolSyma::init1(void)
     mDev.writeReg(NRF24L01_04_SETUP_RETR, 0xff); // 4mS retransmit t/o, 15 tries (retries w/o AA?)
     mDev.writeReg(NRF24L01_05_RF_CH, 0x08);
 
-    if (getProtocolOpt() == FORMAT_X5C_X2) {
+    if (getProtocolOpt() == PROTO_OPT_X5C_X2) {
       mDev.setBitrate(NRF24L01_BR_1M);
       mPacketSize = 16;
     } else {
@@ -222,7 +240,7 @@ void RFProtocolSyma::init1(void)
     mDev.writeReg(NRF24L01_17_FIFO_STATUS, 0x00); // Just in case, no real bits to write here
 
     mDev.writeRegMulti_P(NRF24L01_10_TX_ADDR,
-                                (getProtocolOpt() == FORMAT_X5C_X2) ? RX_TX_ADDR_X5C : BIND_RX_TX_ADDR,
+                                (getProtocolOpt() == PROTO_OPT_X5C_X2) ? RX_TX_ADDR_X5C : BIND_RX_TX_ADDR,
                                 5);
     mDev.readReg(NRF24L01_07_STATUS);
 
@@ -232,8 +250,6 @@ void RFProtocolSyma::init1(void)
     mDev.readReg(NRF24L01_00_CONFIG);
     mDev.writeReg(NRF24L01_00_CONFIG, 0x0c);
     mDev.writeReg(NRF24L01_00_CONFIG, 0x0e);  // power on
-
-    printf(F("init1 : %ld\n"), millis());
 }
 
 
@@ -251,34 +267,32 @@ void RFProtocolSyma::init2(void)
     mDev.writeReg(NRF24L01_05_RF_CH, 0x08);
     mDev.writePayload_P(FIRST_PACKET, sizeof(FIRST_PACKET));
 
-    if (getProtocolOpt() == FORMAT_X5C_X2) {
-      mChannelCnt = sizeof(CHANS_BIND_X5C);
-      memcpy_P(mRFChanBufs, CHANS_BIND_X5C, mChannelCnt);
+    if (getProtocolOpt() == PROTO_OPT_X5C_X2) {
+      mRFChanCnt = sizeof(CHANS_BIND_X5C);
+      memcpy_P(mRFChanBufs, CHANS_BIND_X5C, mRFChanCnt);
     } else {
       initRxTxAddr();   // make info available for bind packets
-      mChannelCnt = sizeof(CHANS_BIND);
-      memcpy_P(mRFChanBufs, CHANS_BIND, mChannelCnt);
+      mRFChanCnt = sizeof(CHANS_BIND);
+      memcpy_P(mRFChanBufs, CHANS_BIND, mRFChanCnt);
     }
 
-    mCurChan   = 0;
+    mCurRFChan   = 0;
     mPacketCtr = 0;
-    printf(F("init2 : %ld\n"), millis());
 }
 
 static const PROGMEM u8 CHANS_DATA_X5C[] = {0x1d, 0x2f, 0x26, 0x3d, 0x15, 0x2b, 0x25, 0x24,
                                             0x27, 0x2c, 0x1c, 0x3e, 0x39, 0x2d, 0x22};
 void RFProtocolSyma::init3(void)
 {
-    if (getProtocolOpt() == FORMAT_X5C_X2) {
-      mChannelCnt = sizeof(CHANS_DATA_X5C);
-      memcpy_P(mRFChanBufs, CHANS_DATA_X5C, mChannelCnt);
+    if (getProtocolOpt() == PROTO_OPT_X5C_X2) {
+      mRFChanCnt = sizeof(CHANS_DATA_X5C);
+      memcpy_P(mRFChanBufs, CHANS_DATA_X5C, mRFChanCnt);
     } else {
       setRFChannel(mRxTxAddrBuf[0]);
       mDev.writeRegMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, 5);
     }
-    mCurChan   = 0;
+    mCurRFChan   = 0;
     mPacketCtr = 0;
-    printf(F("init3 : %ld\n"), millis());
 }
 
 static const PROGMEM u8 START_CHANS_1[] = {0x0a, 0x1a, 0x2a, 0x3a};
@@ -292,15 +306,15 @@ void RFProtocolSyma::setRFChannel(u8 address)
     u8  i;
     u32 *pchans = (u32 *)mRFChanBufs;   // avoid compiler warning
 
-    mChannelCnt = 4;
+    mRFChanCnt = 4;
     if (laddress < 0x10) {
         if (laddress == 6)
             laddress = 7;
-        for(i=0; i < mChannelCnt; i++) {
+        for(i=0; i < mRFChanCnt; i++) {
             mRFChanBufs[i] = pgm_read_byte(START_CHANS_1 + i) + laddress;
         }
     } else if (laddress < 0x18) {
-        for(i=0; i < mChannelCnt; i++) {
+        for(i=0; i < mRFChanCnt; i++) {
             mRFChanBufs[i] = pgm_read_byte(START_CHANS_2 + i) + (laddress & 0x07);
         }
         if (laddress == 0x16) {
@@ -308,7 +322,7 @@ void RFProtocolSyma::setRFChannel(u8 address)
             mRFChanBufs[1] += 1;
         }
     } else if (laddress < 0x1e) {
-        for(i=0; i < mChannelCnt; i++) {
+        for(i=0; i < mRFChanCnt; i++) {
             mRFChanBufs[i] = pgm_read_byte(START_CHANS_3 + i) + (laddress & 0x07);
         }
     } else if (laddress == 0x1e) {
@@ -337,7 +351,6 @@ u16 RFProtocolSyma::callState(void)
         if (mBindCtr == 0) {
             init3();
             mState = SYMAX_DATA;
-            printf(F("Bind Done : %ld\n"), millis());
         } else {
             sendPacket(1);
             mBindCtr--;
@@ -364,7 +377,7 @@ int RFProtocolSyma::init(void)
     mState = SYMAX_INIT1;
 
     startState(INITIAL_WAIT_uS);
-    printf(F("init : %ld\n"), millis());
+
     return 0;
 }
 
@@ -388,27 +401,26 @@ int RFProtocolSyma::getChannels(void)
 
 int RFProtocolSyma::getInfo(s8 id, u8 *data)
 {
-    u8 size = 0;
-    switch (id) {
-        case INFO_STATE:
-            *data = mState;
-            size = 1;
-            break;
+    u8 size;
 
-        case INFO_CHANNEL:
-            *data = mRFChanBufs[mCurChan];
-            size = 1;
-            break;
+    size = RFProtocol::getInfo(id, data);
+    if (size == 0) {
+        switch (id) {
+            case INFO_STATE:
+                *data = mState;
+                size = 1;
+                break;
 
-        case INFO_PACKET_CTR:
-            size = sizeof(mPacketCtr);
-            *((u32*)data) = mPacketCtr;
-            break;
+            case INFO_CHANNEL:
+                *data = mRFChanBufs[mCurRFChan];
+                size = 1;
+                break;
 
-        case INFO_ID:
-            size = 4;
-            *((u32*)data) = (u32)getProtoID();
-            break;
+            case INFO_PACKET_CTR:
+                size = sizeof(mPacketCtr);
+                *((u32*)data) = mPacketCtr;
+                break;
+        }
     }
     return size;
 }

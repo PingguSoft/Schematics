@@ -8,19 +8,8 @@ class RFProtocolHiSky : public RFProtocol
 {
 
 #define MAX_PACKET_SIZE     10
-#define MAX_BIND_COUNT     800
-
-#define PACKET_PERIOD_uS     1000
-#define INITIAL_WAIT_uS      1000
-
 #define ADDR_BUF_SIZE        5
 #define MAX_RF_CHANNELS     20
-
-
-enum {
-    HISKY_INIT = 0,
-    HISKY_DATA = 0x10
-};
 
 public:
     RFProtocolHiSky(u32 id):RFProtocol(id) { }
@@ -42,7 +31,7 @@ private:
     void initRxTxAddr(void);
     void init1(void);
     void setTxID(u32 id);
-    u16  getChannel(CH_T id);
+    u16  getChannel(u8 id);
 
 
 // variables
@@ -54,7 +43,7 @@ private:
     u8   mBindingBufs[4][MAX_PACKET_SIZE];
     u8   mRxTxAddrBuf[ADDR_BUF_SIZE];
     
-    u8   mCurChan;
+    u8   mCurRFChan;
     u8   mBindingIdx;
     u8   mCtr1ms;
     u8   mState;

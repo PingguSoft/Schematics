@@ -11,6 +11,8 @@
 #include "RFProtocolHiSky.h"
 #include "RFProtocolCFlie.h"
 #include "RFProtocolDevo.h"
+#include "RFProtocolHubsan.h"
+#include "RFProtocolFlysky.h"
 #include "SerialProtocol.h"
 
 static SerialProtocol  mSerial;
@@ -19,6 +21,9 @@ static u8 mBaudChkCtr;
 static u8 mBaudAckStr[12];
 
 static RFProtocol      *mRFProto = NULL;
+
+static const PROGMEM char STR_AT[] = "AT";
+
 u32 serialCallback(u8 cmd, u8 *data, u8 size)
 {
     u32 id;
@@ -37,39 +42,58 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
             id = *(u32*)data;
             switch (RFProtocol::getModule(id)) {
                 case RFProtocol::TX_NRF24L01: {
+                    ret = 1;
                     switch (RFProtocol::getProtocol(id)) {
                         case RFProtocol::PROTO_NRF24L01_SYMAX:
                             mRFProto = new RFProtocolSyma(id);
-                            ret = 1;
                             break;
 
                         case RFProtocol::PROTO_NRF24L01_YD717:
                             mRFProto = new RFProtocolYD717(id);
-                            ret = 1;
                             break;
 
                         case RFProtocol::PROTO_NRF24L01_V2x2:
                             mRFProto = new RFProtocolV2x2(id);
-                            ret = 1;
                             break;
 
                         case RFProtocol::PROTO_NRF24L01_HISKY:
                             mRFProto = new RFProtocolHiSky(id);
-                            ret = 1;
                             break;
 
                         case RFProtocol::PROTO_NRF24L01_CFLIE:
                             mRFProto = new RFProtocolCFlie(id);
-                            ret = 1;
+                            break;
+                            
+                        default:
+                            ret = 0;
                             break;
                     }
                 }
                 break;
 
                 case RFProtocol::TX_CYRF6936:
-                    mRFProto = new RFProtocolDevo(id);
-                    ret = 1;
+                    //mRFProto = new RFProtocolDevo(id);
+                    //ret = 1;
                 break;
+
+                case RFProtocol::TX_A7105: {
+                    ret = 1;
+                    switch (RFProtocol::getProtocol(id)) {
+                        case RFProtocol::PROTO_A7105_FLYSKY:
+                            mRFProto = new RFProtocolFlysky(id);
+                            break;
+
+                        case RFProtocol::PROTO_A7105_HUBSAN:
+                            mRFProto = new RFProtocolHubsan(id);
+                            break;
+
+                        default:
+                            ret = 0;
+                            break;
+                    }
+                }
+                break;
+                    
             }
             //mSerial.sendResponse(true, cmd, (u8*)&ret, sizeof(ret));
             mSerial.sendResponse(true, cmd, (u8*)mBaudAckStr, mBaudAckLen);
@@ -120,14 +144,14 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
             mSerial.clearRX();
             mSerial.clearTX();
             for (u8 i = 0; i < 3; i++) {
-                mSerial.sendString_P(PSTR("AT"));
+                mSerial.sendString_P(STR_AT);
                 delay(1050);
             }
             strncpy_P((char*)mBaudAckStr, PSTR("AT+BAUD"), 7);
             mBaudAckStr[7] = *data;
             mBaudAckStr[8] = 0;
             mSerial.sendString((char*)mBaudAckStr);
-            delay(1050);
+            delay(2000);
             mBaudAckLen = mSerial.getString(mBaudAckStr);
             while(1);
             break;
@@ -137,7 +161,7 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
 
 void setup()
 {
-    mSerial.begin(57600);
+    mSerial.begin(9600);
     mSerial.setCallback(serialCallback);
     mBaudChkCtr = 0;
 }
@@ -145,42 +169,22 @@ void setup()
 void loop()
 {
     if (mBaudChkCtr == 0) {
-        for ( ; mBaudChkCtr < 2; ) {
-            mSerial.sendString_P(PSTR("AT"));
-            delay(1050);
-            mBaudAckLen = mSerial.getString(mBaudAckStr);
-            if (mBaudAckLen < 2 || strncmp_P((const char*)mBaudAckStr, PSTR("OK"), 2)) {
-                mSerial.begin(9600);
-                delay(500);
-                mBaudChkCtr++;
-            } else
-                break;
-        }
+        mSerial.sendString_P(PSTR("AT+BAUD7"));
+        delay(2000);
+        mBaudAckLen = mSerial.getString(mBaudAckStr);
 
-        if (mBaudChkCtr > 0) {
-            mSerial.sendString_P(PSTR("AT+NAMESMART100"));
-            delay(1050);
-            mSerial.sendString_P(PSTR("AT+BAUD7"));
-            delay(1050);
-            mBaudAckLen = mSerial.getString(mBaudAckStr);
-
-            mSerial.begin(57600);
-            delay(500);
-
-            mSerial.sendString_P(PSTR("AT"));
-            delay(1050);
-            mSerial.sendString_P(PSTR("AT"));
-            delay(1050);
-            mBaudAckLen = mSerial.getString(mBaudAckStr);
-        }
         mSerial.begin(57600);
         delay(500);
-        mBaudChkCtr++;
-    }
 
-    mSerial.handleRX();
-    if (mRFProto)
-        mRFProto->loop();
+        mSerial.sendString_P(PSTR("AT+NAMESMART100"));
+        delay(1050);
+        mBaudAckLen = mSerial.getString(mBaudAckStr);
+        mBaudChkCtr++;
+    } else {
+        mSerial.handleRX();
+        if (mRFProto)
+            mRFProto->loop();
+    }
 }
 
 int freeRam() {

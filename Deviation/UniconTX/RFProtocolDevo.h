@@ -7,33 +7,11 @@
 
 class RFProtocolDevo : public RFProtocol
 {
-#define PKTS_PER_CHANNEL        4
-#define TELEMETRY_ENABLE     0x30
 #define MAX_PACKET_SIZE        16
-#define MAX_BIND_COUNT     0x1388
 #define ADDR_BUF_SIZE           5
 #define MFG_ID_SIZE             6
-
-#define PACKET_PERIOD_uS     1200
-#define INITIAL_WAIT_uS      2400
-
 #define MAX_RF_CHANNELS         5
 
-enum PktState {
-    DEVO_BIND,
-    DEVO_BIND_SENDCH,
-    DEVO_BOUND,
-    DEVO_BOUND_1,
-    DEVO_BOUND_2,
-    DEVO_BOUND_3,
-    DEVO_BOUND_4,
-    DEVO_BOUND_5,
-    DEVO_BOUND_6,
-    DEVO_BOUND_7,
-    DEVO_BOUND_8,
-    DEVO_BOUND_9,
-    DEVO_BOUND_10,
-};
 
 public:
     RFProtocolDevo(u32 id):RFProtocol(id) { }

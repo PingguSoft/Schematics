@@ -2,6 +2,16 @@
 #include "RFProtocolHiSky.h"
 #include "utils.h"
 
+#define MAX_BIND_COUNT     800
+
+#define PACKET_PERIOD_uS     1000
+#define INITIAL_WAIT_uS      1000
+enum {
+    HISKY_INIT = 0,
+    HISKY_DATA = 0x10
+};
+
+
 void RFProtocolHiSky::buildRFChannels(u32 seed)
 {
     int idx = 0;
@@ -45,7 +55,7 @@ void RFProtocolHiSky::buildBindingPacket(void)
     u8 sum_l,sum_h;
 
     mCtr1ms  = 0;
-    mCurChan = 0;
+    mCurRFChan = 0;
 
     sum = 0;
     for (i= 0; i < 5; i++)
@@ -75,7 +85,7 @@ void RFProtocolHiSky::buildBindingPacket(void)
     mBindingIdx = 0;
 }
 
-u16 RFProtocolHiSky::getChannel(CH_T id)
+u16 RFProtocolHiSky::getChannel(u8 id)
 {
     s32 ch = RFProtocol::getControl(id);
     if (ch < CHAN_MIN_VALUE) {
@@ -122,7 +132,7 @@ void RFProtocolHiSky::buildDataPacket(void)
     mPacketBuf[8] |= (u8)((ch >> 2) & 0x00c0);
     
     for (i = 7; i >= 4; i--) {
-        ch = getChannel((CH_T)i);
+        ch = getChannel(i);
         mPacketBuf[i]  = (u8)ch;
         mPacketBuf[9] |= (u8)((ch >> 2) & 0x0003);
         mPacketBuf[9] <<= 2;
@@ -149,7 +159,6 @@ void RFProtocolHiSky::initRxTxAddr(void)
         rand32_r(&lfsr, 0);
     buildRFChannels(lfsr);    
 
-    printf(F("ID:%08lx\n"), lfsr);
 }
 
 void RFProtocolHiSky::init1(void)
@@ -171,7 +180,6 @@ void RFProtocolHiSky::init1(void)
     mDev.setRFPower(getRFPower());
     mDev.writeReg(NRF24L01_07_STATUS, 0x70);                            // Clear data ready, data sent, and retransmit
 
-    printf(F("init1 : %ld\n"), millis());
 }
 
 
@@ -220,10 +228,10 @@ u16 RFProtocolHiSky::callState(void)
         
     case 6:
         mDev.writeRegMulti(NRF24L01_10_TX_ADDR, mRxTxAddrBuf, 5);
-        mDev.writeReg(NRF24L01_05_RF_CH, mRFChanBufs[mCurChan]);
-        mCurChan++;
-        if (mCurChan >= MAX_RF_CHANNELS)
-            mCurChan = 0;
+        mDev.writeReg(NRF24L01_05_RF_CH, mRFChanBufs[mCurRFChan]);
+        mCurRFChan++;
+        if (mCurRFChan >= MAX_RF_CHANNELS)
+            mCurRFChan = 0;
         break;
 
     case 7:
@@ -262,7 +270,7 @@ int RFProtocolHiSky::init(void)
     }
 
     startState(INITIAL_WAIT_uS);
-    printf(F("init : %ld\n"), millis());
+
     return 0;
 }
 
@@ -285,22 +293,26 @@ int RFProtocolHiSky::getChannels(void)
 
 int RFProtocolHiSky::getInfo(s8 id, u8 *data)
 {
-    u8 size = 0;
-    switch (id) {
-        case INFO_STATE:
-            *data = mState;
-            size = 1;
-            break;
+    u8 size;
+    
+    size = RFProtocol::getInfo(id, data);
+    if (size == 0) {
+        switch (id) {
+            case INFO_STATE:
+                *data = mState;
+                size = 1;
+                break;
 
-        case INFO_CHANNEL:
-            *data = mRFChanBufs[mCurChan];
-            size = 1;
-            break;
+            case INFO_CHANNEL:
+                *data = mRFChanBufs[mCurRFChan];
+                size = 1;
+                break;
 
-        case INFO_PACKET_CTR:
-            size = sizeof(mPacketCtr);
-            *((u32*)data) = mPacketCtr;
-            break;
+            case INFO_PACKET_CTR:
+                size = sizeof(mPacketCtr);
+                *((u32*)data) = mPacketCtr;
+                break;
+        }
     }
     return size;
 }

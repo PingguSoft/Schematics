@@ -78,7 +78,15 @@ void RFProtocol::clearRFPowerUpdated(void)
 
 int RFProtocol::getInfo(s8 id, u8 *data)
 {
-    return 0;
+    u8 size = 0;
+    
+    switch (id) {
+        case INFO_ID:
+            size = 4;
+            *((u32*)data) = (u32)getProtoID();
+            break;
+    }
+    return size;
 }
 
 void RFProtocol::test(s8 id)
@@ -117,4 +125,16 @@ void RFProtocol::handleTimer(s8 id)
 void RFProtocol::startState(unsigned long period)
 {
     mTmrState = after(period);
+}
+
+// A E T R : deviation channel order
+static const PROGMEM u8 TBL_ORDERS[4] = {
+    RFProtocol::CH_AILERON,  RFProtocol::CH_ELEVATOR, 
+    RFProtocol::CH_THROTTLE, RFProtocol::CH_RUDDER };
+
+s16 RFProtocol::getControlByOrder(u8 ch)
+{
+    if (ch < 4)
+        ch = pgm_read_byte(TBL_ORDERS + ch);
+    return mBufControls[ch];
 }

@@ -83,6 +83,8 @@ u8 DeviceCYRF6936::setRFPower(u8 power)
 {
     u8 val = readReg(0x03) & 0xF8;
     writeReg(0x03, val | (power & 0x07));
+
+    return val;
 }
 
 void DeviceCYRF6936::setTxRxMode(enum TXRX_State mode)

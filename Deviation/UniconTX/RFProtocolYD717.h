@@ -9,41 +9,7 @@ class RFProtocolYD717 : public RFProtocol
 {
 #define PAYLOADSIZE          8  // receive data pipes set to this size, but unused
 #define MAX_PACKET_SIZE      9  // YD717 packets have 8-byte payload, Syma X4 is 9
-#define MAX_BIND_COUNT      60
-
-#define PACKET_PERIOD_uS  8000
-#define INITIAL_WAIT_uS  50000
-#define PACKET_CHKTIME_uS 5000  // Time to wait if packet not yet acknowledged or timed out
-
 #define ADDR_BUF_SIZE        5
-
-// Stock tx fixed frequency is 0x3C. Receiver only binds on this freq.
-#define RF_CHANNEL          0x3C
-
-#define YD717_FLAG_FLIP     0x0F
-#define YD717_FLAG_LIGHT    0x10
-
-// Packet ack status values
-enum {
-    PKT_PENDING = 0,
-    PKT_ACKED,
-    PKT_TIMEOUT
-};
-
-enum {
-    YD717_INIT1 = 0,
-    YD717_BIND2,
-    YD717_BIND3,
-    YD717_DATA  = 0x10
-};
-
-enum {
-    FORMAT_YD717       = 0,
-    FORMAT_SKY_WALKER  = 1,
-    FORMAT_XINXUN      = 2,
-    FORMAT_NI_HUI      = 3,
-    FORMAT_SYMA_X4     = 4,
-};
 
 public:
     RFProtocolYD717(u32 id):RFProtocol(id) { }
@@ -61,7 +27,7 @@ public:
 private:
     u8   getCheckSum(u8 *data);
     u8   checkStatus(void);
-    u8   getControl(CH_T id);
+    u8   getControl(u8 id);
     void getControls(u8* throttle, u8* rudder, u8* elevator, u8* aileron,
                      u8* flags, u8* rudder_trim, u8* elevator_trim, u8* aileron_trim);
     void sendPacket(u8 bind);

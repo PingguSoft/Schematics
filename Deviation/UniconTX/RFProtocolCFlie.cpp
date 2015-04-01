@@ -3,6 +3,20 @@
 #include "utils.h"
 
 
+// Packet ack status values
+enum {
+    PKT_PENDING = 0,
+    PKT_ACKED,
+    PKT_TIMEOUT
+};
+
+enum {
+    CFLIE_INIT_SEARCH = 0,
+    CFLIE_INIT_DATA,
+    CFLIE_SEARCH,
+    CFLIE_DATA = 0x10
+};
+
 u8 RFProtocolCFlie::checkStatus(void)
 {
     u8 stat = mDev.readReg(NRF24L01_07_STATUS);
@@ -30,8 +44,8 @@ void RFProtocolCFlie::sendSearchPacket(void)
     mDev.writeReg(NRF24L01_07_STATUS, (BV(NRF24L01_07_TX_DS) | BV(NRF24L01_07_MAX_RT)));
     mDev.flushTx();
 
-    if (mCurChan++ > 125) {
-        mCurChan = 0;
+    if (mCurRFChan++ > 125) {
+        mCurRFChan = 0;
         switch(mDataRate) {
         case NRF24L01_BR_250K:
             mDataRate = NRF24L01_BR_1M;
@@ -46,7 +60,7 @@ void RFProtocolCFlie::sendSearchPacket(void)
             break;
         }
     }
-    setRateAndCh(mDataRate, mCurChan);
+    setRateAndCh(mDataRate, mCurRFChan);
     mDev.writePayload(&buf, sizeof(buf));
     ++mPacketCtr;
 }
@@ -148,7 +162,7 @@ void RFProtocolCFlie::initRxTxAddr(void)
     mRxTxAddrBuf[4] = 0xE7;
 
     mDataRate = NRF24L01_BR_250K;
-    mCurChan  = 0;
+    mCurRFChan  = 0;
     mState    = CFLIE_INIT_SEARCH;
 }
 
@@ -165,7 +179,7 @@ void RFProtocolCFlie::init1(void)
     mDev.writeReg(NRF24L01_03_SETUP_AW, ADDR_BUF_SIZE - 2);     // 5-byte RX/TX address
     mDev.writeReg(NRF24L01_04_SETUP_RETR, 0x13);            // 3 retransmits, 500us delay
 
-    mDev.writeReg(NRF24L01_05_RF_CH, mCurChan);           // Defined by model id
+    mDev.writeReg(NRF24L01_05_RF_CH, mCurRFChan);           // Defined by model id
     mDev.setBitrate(mDataRate);
     
     mDev.setRFPower(getRFPower());
@@ -250,7 +264,7 @@ int RFProtocolCFlie::init(void)
     initRxTxAddr();
     init1();
     startState(INITIAL_WAIT_uS);
-    printf(F("init : %ld\n"), millis());
+
     return 0;
 }
 
@@ -273,22 +287,26 @@ int RFProtocolCFlie::getChannels(void)
 
 int RFProtocolCFlie::getInfo(s8 id, u8 *data)
 {
-    u8 size = 0;
-    switch (id) {
-        case INFO_STATE:
-            *data = mState;
-            size = 1;
-            break;
+    u8 size;
 
-        case INFO_CHANNEL:
-            *data = mCurChan;
-            size = 1;
-            break;
+    size = RFProtocol::getInfo(id, data);
+    if (size == 0) {    
+        switch (id) {
+            case INFO_STATE:
+                *data = mState;
+                size = 1;
+                break;
 
-        case INFO_PACKET_CTR:
-            size = sizeof(mPacketCtr);
-            *((u32*)data) = mPacketCtr;
-            break;
+            case INFO_CHANNEL:
+                *data = mCurRFChan;
+                size = 1;
+                break;
+
+            case INFO_PACKET_CTR:
+                size = sizeof(mPacketCtr);
+                *((u32*)data) = mPacketCtr;
+                break;
+        }
     }
     return size;
 }

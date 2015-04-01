@@ -2,6 +2,50 @@
 #include "RFProtocolV2x2.h"
 #include "utils.h"
 
+#define MAX_BIND_COUNT    1000
+#define PACKET_PERIOD_uS  4000
+#define PACKET_CHKTIME_uS  100
+#define INITIAL_WAIT_uS  50000
+
+// Every second
+#define BLINK_COUNT         250
+// ~ every 0.25 sec
+#define BLINK_COUNT_MIN     64
+// ~ every 2 sec
+#define BLINK_COUNT_MAX     512
+
+enum {
+    V2x2_FLAG_CAMERA = 0x01, // also automatic Missile Launcher and Hoist in one direction
+    V2x2_FLAG_VIDEO  = 0x02, // also Sprayer, Bubbler, Missile Launcher(1), and Hoist in the other dir.
+    V2x2_FLAG_FLIP   = 0x04,
+    V2x2_FLAG_UNK9   = 0x08,
+    V2x2_FLAG_LED    = 0x10,
+    V2x2_FLAG_UNK10  = 0x20,
+    V2x2_FLAG_BIND   = 0xC0
+};
+
+enum {
+    V202_INIT2 = 0,
+    V202_INIT2_NO_BIND,
+    V202_BIND1,
+    V202_BIND2,
+    V202_DATA  = 0x10
+};
+
+#define PROTO_OPT_SKIP_BIND 0x01
+
+enum {
+    USEBLINK_NO  = 0,
+    USEBLINK_YES = 1,
+};
+
+// Packet ack status values
+enum {
+    PKT_PENDING = 0,
+    PKT_ACKED,
+    PKT_TIMEOUT
+};
+
 u8 RFProtocolV2x2::getCheckSum(u8 *data)
 {
     u8 sum = 0;
@@ -23,7 +67,7 @@ u8 RFProtocolV2x2::checkStatus()
     return PKT_PENDING;
 }
 
-u8 RFProtocolV2x2::getChannel(CH_T id)
+u8 RFProtocolV2x2::getChannel(u8 id)
 {
     s32 ch = RFProtocol::getControl(id);
     if (ch < CHAN_MIN_VALUE) {
@@ -135,8 +179,8 @@ void RFProtocolV2x2::sendPacket(u8 bind)
     // hops to a new frequency as soon as valid packet
     // received it does not matter that the packet is
     // not the same one repeated twice - nobody checks this
-    u8 rf_ch = mRFChanBufs[mCurChan >> 1];
-    mCurChan = (mCurChan + 1) & 0x1F;
+    u8 rf_ch = mRFChanBufs[mCurRFChan >> 1];
+    mCurRFChan = (mCurRFChan + 1) & 0x1F;
     mDev.writeReg(NRF24L01_05_RF_CH, rf_ch);
     mDev.flushTx();
     mDev.writePayload(mPacketBuf, sizeof(mPacketBuf));
@@ -170,7 +214,6 @@ void RFProtocolV2x2::initRxTxAddr(void)
       rand32_r(&lfsr, 0);
 
     setTxID(lfsr);
-    printf(F("ID:%08lx\n"), lfsr);
 }
 
 const PROGMEM u8 RX_TX_ADDR[] = {0x66, 0x88, 0x68, 0x68, 0x68};
@@ -207,8 +250,6 @@ void RFProtocolV2x2::init1(void)
     mDev.writeRegMulti_P(NRF24L01_0A_RX_ADDR_P0, RX_TX_ADDR, 5);
     mDev.writeRegMulti_P(NRF24L01_0B_RX_ADDR_P1, RX_P1_ADDR, 5);
     mDev.writeRegMulti_P(NRF24L01_10_TX_ADDR, RX_TX_ADDR, 5);
-
-    printf(F("init1 : %ld\n"), millis());
 }
 
 void RFProtocolV2x2::init2(void)
@@ -218,9 +259,8 @@ void RFProtocolV2x2::init2(void)
     u8 config = BV(NRF24L01_00_EN_CRC) | BV(NRF24L01_00_CRCO) | BV(NRF24L01_00_PWR_UP);
     mDev.writeReg(NRF24L01_00_CONFIG, config);
 
-    mCurChan    = 0;
+    mCurRFChan    = 0;
     mPacketSent = 0;
-    printf(F("init2 : %ld\n"), millis());
 }
 
 // This is frequency hopping table for V202 protocol
@@ -320,16 +360,16 @@ int RFProtocolV2x2::init(void)
     mLedBlinkCtr = BLINK_COUNT_MAX;
 
     init1();
-    if (getProtocolOpt() == STARTBIND_YES) {
-        mState   = V202_INIT2;
-        mBindCtr = MAX_BIND_COUNT;
-    } else {
+    if (getProtocolOpt() == PROTO_OPT_SKIP_BIND) {
         mState   = V202_INIT2_NO_BIND;
         mBindCtr = BLINK_COUNT;
+    } else {
+        mState   = V202_INIT2;
+        mBindCtr = MAX_BIND_COUNT;
     }
     initRxTxAddr();
     startState(INITIAL_WAIT_uS);
-    printf(F("init : %ld\n"), millis());
+
     return 0;
 }
 
@@ -352,22 +392,26 @@ int RFProtocolV2x2::getChannels(void)
 
 int RFProtocolV2x2::getInfo(s8 id, u8 *data)
 {
-    u8 size = 0;
-    switch (id) {
-        case INFO_STATE:
-            *data = mState;
-            size = 1;
-            break;
+    u8 size;
 
-        case INFO_CHANNEL:
-            *data = mRFChanBufs[mCurChan];
-            size = 1;
-            break;
+    size = RFProtocol::getInfo(id, data);
+    if (size == 0) {
+        switch (id) {
+            case INFO_STATE:
+                *data = mState;
+                size = 1;
+                break;
 
-        case INFO_PACKET_CTR:
-            size = sizeof(mPacketCtr);
-            *((u32*)data) = mPacketCtr;
-            break;
+            case INFO_CHANNEL:
+                *data = mRFChanBufs[mCurRFChan];
+                size = 1;
+                break;
+
+            case INFO_PACKET_CTR:
+                size = sizeof(mPacketCtr);
+                *((u32*)data) = mPacketCtr;
+                break;
+        }
     }
     return size;
 }

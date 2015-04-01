@@ -11,30 +11,30 @@ public:
     #define CHAN_MAX_VALUE 500
     #define CHAN_MIN_VALUE -500
 
-    typedef enum {
+    enum {
         TX_NRF24L01,
         TX_A7105,
         TX_CYRF6936,
-    } TX_T;
+    };
 
-    typedef enum {
+    enum {
         PROTO_NRF24L01_V2x2,
         PROTO_NRF24L01_HISKY,
         PROTO_NRF24L01_YD717,
         PROTO_NRF24L01_SYMAX,
         PROTO_NRF24L01_CFLIE,
-    } PROTO_NRF24L01_T;
+    };
 
-    typedef enum {
+    enum {
         PROTO_A7105_FLYSKY,
         PROTO_A7105_HUBSAN,
-    } PROTO_A7105_T;
+    };
 
-    typedef enum {
+    enum {
         PROTO_CYRF6936_DEVO,
-    } PROTO_CYRF6936_T;
+    };
 
-    typedef enum {
+    enum {
         CH_THROTTLE = 0,
         CH_RUDDER,
         CH_ELEVATOR,
@@ -48,21 +48,21 @@ public:
         CH_AUX7,
         CH_AUX8,
         MAX_CHANNEL = CH_AUX8
-    } CH_T;
+    };
 
-    typedef enum {
+    enum {
         TRIM_RUDDER,
         TRIM_ELEVATOR,
         TRIM_AILERON,
         MAX_TRIM = TRIM_AILERON
-    } TRIM_T;
+    };
 
-    typedef enum {
+    enum {
         INFO_STATE,
         INFO_CHANNEL,
         INFO_PACKET_CTR,
         INFO_ID
-    } INFO_T;
+    };
 
     // utility functions
     static u32   buildID(u8 module, u8 proto, u8 option)  { return ((u32)module << 16 | (u32)proto << 8 | option); }
@@ -83,7 +83,8 @@ public:
 
     void injectControl(u8 ch, s16 val);
     void injectControls(s16 *data, int size);
-    s16  getControl(u8 ch);
+    s16  getControl(u8 ch);         // TREA order
+    s16  getControlByOrder(u8 ch);  // AETR order : deviation order
 
     // power
     u8   getRFPower(void);
