@@ -201,44 +201,60 @@ void RFProtocolSyma::initRxTxAddr(void)
 
 static const PROGMEM u8 BIND_RX_TX_ADDR[] = {0xab,0xac,0xad,0xae,0xaf};
 static const PROGMEM u8 RX_TX_ADDR_X5C[]  = {0x6d,0x6a,0x73,0x73,0x73};    // X5C uses same address for bind and data
+static const PROGMEM u8 TBL_INIT_REGS[] = {
+    BV(NRF24L01_00_EN_CRC) | BV(NRF24L01_00_CRCO),  // 00 : 2-bytes CRC, radio off
+    0x00,                                           // 01 : No Auto Acknoledgement
+    0x3F,                                           // 02 : Enable all data pipes (even though not used?)
+    0x03,                                           // 03 : 5-byte RX/TX address
+    0xee,                                           // 04 : 3.75mS retransmit t/o, 14 tries (retries w/o AA?)
+    0x08,                                           // 05 : RF channel : 8
+    0xff,                                           // 06 : skip
+    0x70,                                           // 07 : Clear data ready, data sent, and retransmit
+    0xff,                                           // 08 : skip
+    0xff,                                           // 09 : skip
+    0xff,                                           // 0A : skip
+    0xff,                                           // 0B : skip
+    0xC3,                                           // 0C : LSB byte of pipe 2 receive address
+    0xC4,                                           // 0D :
+    0xC5,                                           // 0E :
+    0xC6,                                           // 0F :
+    0xff,                                           // 10 : skip
+    PAYLOADSIZE,                                    // 11 : bytes of data payload for pipe 1
+    PAYLOADSIZE,                                    // 12 :
+    PAYLOADSIZE,                                    // 13 :
+    PAYLOADSIZE,                                    // 14 :
+    PAYLOADSIZE,                                    // 15 :
+    PAYLOADSIZE,                                    // 16 :
+    0x00                                            // 17 : Just in case, no real bits to write here
+};
 
 void RFProtocolSyma::init1(void)
 {
+    u8 val;
+    u8 bitrate;
+    
     mDev.initialize();
     mDev.setTxRxMode(TX_EN);
-
     mDev.readReg(NRF24L01_07_STATUS);
-    mDev.writeReg(NRF24L01_00_CONFIG, BV(NRF24L01_00_EN_CRC) | BV(NRF24L01_00_CRCO));
-    mDev.writeReg(NRF24L01_01_EN_AA, 0x00);      // No Auto Acknoledgement
-    mDev.writeReg(NRF24L01_02_EN_RXADDR, 0x3F);  // Enable all data pipes (even though not used?)
-    mDev.writeReg(NRF24L01_03_SETUP_AW, 0x03);   // 5-byte RX/TX address
-    mDev.writeReg(NRF24L01_04_SETUP_RETR, 0xff); // 4mS retransmit t/o, 15 tries (retries w/o AA?)
-    mDev.writeReg(NRF24L01_05_RF_CH, 0x08);
 
     if (getProtocolOpt() == PROTO_OPT_X5C_X2) {
-      mDev.setBitrate(NRF24L01_BR_1M);
-      mPacketSize = 16;
+        bitrate = NRF24L01_BR_1M;
+        mPacketSize = 16;
     } else {
-      mDev.setBitrate(NRF24L01_BR_250K);
-      mPacketSize = 10;
+        bitrate = NRF24L01_BR_250K;
+        mPacketSize = 10;
     }
 
-    mDev.setRFPower(getRFPower());
-    mDev.writeReg(NRF24L01_07_STATUS, 0x70);     // Clear data ready, data sent, and retransmit
-    mDev.writeReg(NRF24L01_08_OBSERVE_TX, 0x00);
-    mDev.writeReg(NRF24L01_09_CD, 0x00);
-    mDev.writeReg(NRF24L01_0C_RX_ADDR_P2, 0xC3); // LSB byte of pipe 2 receive address
-    mDev.writeReg(NRF24L01_0D_RX_ADDR_P3, 0xC4);
-    mDev.writeReg(NRF24L01_0E_RX_ADDR_P4, 0xC5);
-    mDev.writeReg(NRF24L01_0F_RX_ADDR_P5, 0xC6);
-    mDev.writeReg(NRF24L01_11_RX_PW_P0, PAYLOADSIZE);   // bytes of data payload for pipe 1
-    mDev.writeReg(NRF24L01_12_RX_PW_P1, PAYLOADSIZE);
-    mDev.writeReg(NRF24L01_13_RX_PW_P2, PAYLOADSIZE);
-    mDev.writeReg(NRF24L01_14_RX_PW_P3, PAYLOADSIZE);
-    mDev.writeReg(NRF24L01_15_RX_PW_P4, PAYLOADSIZE);
-    mDev.writeReg(NRF24L01_16_RX_PW_P5, PAYLOADSIZE);
-    mDev.writeReg(NRF24L01_17_FIFO_STATUS, 0x00); // Just in case, no real bits to write here
-
+    for (u8 i = 0; i < sizeof(TBL_INIT_REGS) ; i++) {
+        if (i == NRF24L01_06_RF_SETUP) {
+            mDev.setBitrate(bitrate);
+            mDev.setRFPower(getRFPower());
+        } else {
+            val = pgm_read_byte(TBL_INIT_REGS + i);
+            if (val != 0xff)
+                mDev.writeReg(i, val);
+        }
+    }
     mDev.writeRegMulti_P(NRF24L01_10_TX_ADDR,
                                 (getProtocolOpt() == PROTO_OPT_X5C_X2) ? RX_TX_ADDR_X5C : BIND_RX_TX_ADDR,
                                 5);
@@ -251,7 +267,6 @@ void RFProtocolSyma::init1(void)
     mDev.writeReg(NRF24L01_00_CONFIG, 0x0c);
     mDev.writeReg(NRF24L01_00_CONFIG, 0x0e);  // power on
 }
-
 
 
 // write a strange first mPacketBuf to RF channel 8 ...
@@ -364,10 +379,6 @@ u16 RFProtocolSyma::callState(void)
     return PACKET_PERIOD_uS;
 }
 
-void RFProtocolSyma::test(s8 id)
-{
-}
-
 int RFProtocolSyma::init(void)
 {
     mPacketCtr = 0;
@@ -392,11 +403,6 @@ int RFProtocolSyma::close(void)
 int RFProtocolSyma::reset(void)
 {
     return close();
-}
-
-int RFProtocolSyma::getChannels(void)
-{
-    return 6;
 }
 
 int RFProtocolSyma::getInfo(s8 id, u8 *data)

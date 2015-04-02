@@ -167,35 +167,51 @@ void RFProtocolYD717::initRxTxAddr(void)
     }
 }
 
+static const PROGMEM u8 TBL_INIT_REGS[] = {
+    BV(NRF24L01_00_EN_CRC) | BV(NRF24L01_00_PWR_UP),// 00 : 2-bytes CRC
+    0x3F,                                           // 01 : Auto Acknoledgement on all data pipes
+    0x3F,                                           // 02 : Enable all data pipes (even though not used?)
+    0x03,                                           // 03 : 5-byte RX/TX address
+    0x1A,                                           // 04 : 500uS retransmit t/o, 10 tries
+    RF_CHANNEL,                                     // 05 : RF channel : 3C
+    0xff,                                           // 06 : skip
+    0x70,                                           // 07 : Clear data ready, data sent, and retransmit
+    0xff,                                           // 08 : skip
+    0xff,                                           // 09 : skip
+    0xff,                                           // 0A : skip
+    0xff,                                           // 0B : skip
+    0xC3,                                           // 0C : LSB byte of pipe 2 receive address
+    0xC4,                                           // 0D :
+    0xC5,                                           // 0E :
+    0xC6,                                           // 0F :
+    0xff,                                           // 10 : skip
+    PAYLOADSIZE,                                    // 11 : bytes of data payload for pipe 1
+    PAYLOADSIZE,                                    // 12 :
+    PAYLOADSIZE,                                    // 13 :
+    PAYLOADSIZE,                                    // 14 :
+    PAYLOADSIZE,                                    // 15 :
+    PAYLOADSIZE,                                    // 16 :
+    0x00                                            // 17 : Just in case, no real bits to write here
+};
+
 void RFProtocolYD717::init1(void)
 {
+    u8 val;
+    
     mDev.initialize();
-
-    // CRC, radio on
     mDev.setTxRxMode(TX_EN);
-
-    mDev.writeReg(NRF24L01_00_CONFIG, BV(NRF24L01_00_EN_CRC) | BV(NRF24L01_00_PWR_UP)); 
-    mDev.writeReg(NRF24L01_01_EN_AA, 0x3F);      // Auto Acknoledgement on all data pipes
-    mDev.writeReg(NRF24L01_02_EN_RXADDR, 0x3F);  // Enable all data pipes
-    mDev.writeReg(NRF24L01_03_SETUP_AW, 0x03);   // 5-byte RX/TX address
-    mDev.writeReg(NRF24L01_04_SETUP_RETR, 0x1A); // 500uS retransmit t/o, 10 tries
-    mDev.writeReg(NRF24L01_05_RF_CH, RF_CHANNEL);      // Channel 3C
-    mDev.setBitrate(NRF24L01_BR_1M);             // 1Mbps
-    mDev.setRFPower(TXPOWER_100mW);
-    mDev.writeReg(NRF24L01_07_STATUS, 0x70);     // Clear data ready, data sent, and retransmit
-    mDev.writeReg(NRF24L01_0C_RX_ADDR_P2, 0xC3); // LSB byte of pipe 2 receive address
-    mDev.writeReg(NRF24L01_0D_RX_ADDR_P3, 0xC4);
-    mDev.writeReg(NRF24L01_0E_RX_ADDR_P4, 0xC5);
-    mDev.writeReg(NRF24L01_0F_RX_ADDR_P5, 0xC6);
-    mDev.writeReg(NRF24L01_11_RX_PW_P0, PAYLOADSIZE);   // bytes of data payload for pipe 1
-    mDev.writeReg(NRF24L01_12_RX_PW_P1, PAYLOADSIZE);
-    mDev.writeReg(NRF24L01_13_RX_PW_P2, PAYLOADSIZE);
-    mDev.writeReg(NRF24L01_14_RX_PW_P3, PAYLOADSIZE);
-    mDev.writeReg(NRF24L01_15_RX_PW_P4, PAYLOADSIZE);
-    mDev.writeReg(NRF24L01_16_RX_PW_P5, PAYLOADSIZE);
-    mDev.writeReg(NRF24L01_17_FIFO_STATUS, 0x00); // Just in case, no real bits to write here
+    for (u8 i = 0; i < sizeof(TBL_INIT_REGS) ; i++) {
+        if (i == NRF24L01_06_RF_SETUP) {
+            mDev.setBitrate(NRF24L01_BR_1M);
+            mDev.setRFPower(getRFPower());
+        } else {
+            val = pgm_read_byte(TBL_INIT_REGS + i);
+            if (val != 0xff)
+                mDev.writeReg(i, val);
+        }
+    }
     mDev.writeReg(NRF24L01_1C_DYNPD, 0x3F);       // Enable dynamic payload length on all pipes
-
+    
     // this sequence necessary for module from stock tx
     mDev.readReg(NRF24L01_1D_FEATURE);
     mDev.activate(0x73);                          // Activate feature register
@@ -291,10 +307,6 @@ u16 RFProtocolYD717::callState(void)
     return PACKET_PERIOD_uS;
 }
 
-void RFProtocolYD717::test(s8 id)
-{
-}
-
 int RFProtocolYD717::init(void)
 {
     mPacketCtr = 0;
@@ -317,11 +329,6 @@ int RFProtocolYD717::close(void)
 int RFProtocolYD717::reset(void)
 {
     return close();
-}
-
-int RFProtocolYD717::getChannels(void)
-{
-    return 6;
 }
 
 int RFProtocolYD717::getInfo(s8 id, u8 *data)

@@ -72,6 +72,7 @@ int8_t Timer::after(unsigned long period)
     return every(period, NULL, 1);
 }
 
+#if 0
 int8_t Timer::oscillate(uint8_t pin, unsigned long period, uint8_t startingValue, int repeatCount)
 {
     int8_t i = findFreeEventIndex();
@@ -115,7 +116,7 @@ int8_t Timer::pulseImmediate(uint8_t pin, unsigned long period, uint8_t pulseVal
     }
     return id;
 }
-
+#endif
 
 void Timer::stop(int8_t id)
 {
@@ -136,7 +137,7 @@ void Timer::update(unsigned long now)
     {
         if (_events[i].eventType != EVENT_NONE)
         {
-            if (_events[i].update(now))
+            if (_events[i].update(now) == EVENT_EVERY)
                 handleTimer(i);
         }
     }

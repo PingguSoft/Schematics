@@ -220,10 +220,7 @@ u16 RFProtocolHiSky::callState(void)
         break;
         
     case 5:
-        if (isRFPowerUpdated()) {
-            mDev.setRFPower(getRFPower());
-            clearRFPowerUpdated();
-        }
+        mDev.setRFPower(getRFPower());
         break;
         
     case 6:
@@ -248,10 +245,6 @@ u16 RFProtocolHiSky::callState(void)
     }
 
     return PACKET_PERIOD_uS;    // send 1 binding packet and 1 data packet per 9ms
-}
-
-void RFProtocolHiSky::test(s8 id)
-{
 }
 
 int RFProtocolHiSky::init(void)
@@ -284,11 +277,6 @@ int RFProtocolHiSky::close(void)
 int RFProtocolHiSky::reset(void)
 {
     return close();
-}
-
-int RFProtocolHiSky::getChannels(void)
-{
-    return 8;
 }
 
 int RFProtocolHiSky::getInfo(s8 id, u8 *data)

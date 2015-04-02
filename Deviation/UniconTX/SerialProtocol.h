@@ -16,6 +16,8 @@ public:
         CMD_SET_RFPROTOCOL,     // data u32  : (module << 16 | proto << 8 | option)
         CMD_START_RF,
         CMD_STOP_RF,
+        CMD_SET_RF_POWER,
+        
         CMD_INJECT_CONTROLS,    // 12ch data : throttle, rudder, elevator, aileron, aux1..8
         CMD_GET_INFO,
         CMD_GET_FREE_RAM,

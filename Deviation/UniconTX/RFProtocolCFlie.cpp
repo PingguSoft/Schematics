@@ -253,10 +253,6 @@ u16 RFProtocolCFlie::callState(void)
     return PACKET_PERIOD_uS;
 }
 
-void RFProtocolCFlie::test(s8 id)
-{
-}
-
 int RFProtocolCFlie::init(void)
 {
     mPacketCtr = 0;
@@ -278,11 +274,6 @@ int RFProtocolCFlie::close(void)
 int RFProtocolCFlie::reset(void)
 {
     return close();
-}
-
-int RFProtocolCFlie::getChannels(void)
-{
-    return 8;
 }
 
 int RFProtocolCFlie::getInfo(s8 id, u8 *data)

@@ -50,11 +50,6 @@ int RFProtocol::reset(void)
     return 0;
 }
 
-int RFProtocol::getChannels(void)
-{
-    return 0;
-}
-
 int RFProtocol::setRFPower(u8 power)
 {
     mTXPower = (power | 0x80);
@@ -85,12 +80,13 @@ int RFProtocol::getInfo(s8 id, u8 *data)
             size = 4;
             *((u32*)data) = (u32)getProtoID();
             break;
+
+        case INFO_RF_POWER:
+            size = 1;
+            *data = mTXPower;
+            break;
     }
     return size;
-}
-
-void RFProtocol::test(s8 id)
-{
 }
 
 void RFProtocol::injectControl(u8 ch, s16 val)

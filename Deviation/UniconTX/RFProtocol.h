@@ -61,7 +61,8 @@ public:
         INFO_STATE,
         INFO_CHANNEL,
         INFO_PACKET_CTR,
-        INFO_ID
+        INFO_ID,
+        INFO_RF_POWER,
     };
 
     // utility functions
@@ -103,10 +104,8 @@ public:
     virtual int  init(void);
     virtual int  close(void);
     virtual int  reset(void);
-    virtual int  getChannels(void);
     virtual int  setRFPower(u8 power);
     virtual int  getInfo(s8 id, u8 *data);
-    virtual void test(s8 id);
     virtual u16  callState(void) = 0;
 
 private:

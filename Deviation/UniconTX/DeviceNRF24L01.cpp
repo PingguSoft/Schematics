@@ -178,17 +178,29 @@ TXPOWER_150mW  = 22dBm
 u8 DeviceNRF24L01::setRFPower(u8 power)
 {
     u8 nrf_power = 0;
+
     switch(power) {
-        case TXPOWER_100uW: nrf_power = 0; break;
-        case TXPOWER_300uW: nrf_power = 0; break;
-        case TXPOWER_1mW:   nrf_power = 0; break;
-        case TXPOWER_3mW:   nrf_power = 1; break;
-        case TXPOWER_10mW:  nrf_power = 1; break;
-        case TXPOWER_30mW:  nrf_power = 2; break;
-        case TXPOWER_100mW: nrf_power = 3; break;
-        case TXPOWER_150mW: nrf_power = 3; break;
-        default:            nrf_power = 0; break;
+        case TXPOWER_100uW:
+        case TXPOWER_300uW:
+        case TXPOWER_1mW:   
+            nrf_power = 0; 
+            break;
+
+        case TXPOWER_3mW:
+        case TXPOWER_10mW:  
+            nrf_power = 1; 
+            break;
+
+        case TXPOWER_30mW:  
+            nrf_power = 2; 
+            break;
+
+        case TXPOWER_100mW:
+        case TXPOWER_150mW: 
+            nrf_power = 3; 
+            break;
     };
+    
     // Power is in range 0..3 for nRF24L01
     mRFsetup = (mRFsetup & 0xF9) | ((nrf_power & 0x03) << 1);
     return writeReg(NRF24L01_06_RF_SETUP, mRFsetup);

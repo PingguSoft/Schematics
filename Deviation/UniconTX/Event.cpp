@@ -55,18 +55,21 @@ uint8_t Event::update(unsigned long now)
 
     if (diff >= period)
     {
+        ret = eventType;
         switch (eventType)
         {
             case EVENT_EVERY:
                 if (callback)
                     (*callback)();
-                ret = 1;
                 break;
 
+#if 0
             case EVENT_OSCILLATE:
                 pinState = ! pinState;
                 digitalWrite(pin, pinState);
                 break;
+#endif
+
         }
         lastEventTime = now;
         count++;

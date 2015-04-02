@@ -276,6 +276,28 @@ void RFProtocolDevo::setBoundSOPCodes(void)
     mDev.writeReg(CYRF_03_TX_CFG, 0x08 | getRFPower());
 }
 
+static const PROGMEM u8 TBL_INIT_REGS[] = {
+    CYRF_1D_MODE_OVERRIDE,  0x38,
+    CYRF_03_TX_CFG,         0x08,
+    CYRF_06_RX_CFG,         0x4A,
+    CYRF_0B_PWR_CTRL,       0x00,
+    CYRF_10_FRAMING_CFG,    0xA4,
+    CYRF_11_DATA32_THOLD,   0x05,
+    CYRF_12_DATA64_THOLD,   0x0E,
+    CYRF_1B_TX_OFFSET_LSB,  0x55,
+    CYRF_1C_TX_OFFSET_MSB,  0x05,
+    CYRF_32_AUTO_CAL_TIME,  0x3C,
+    CYRF_35_AUTOCAL_OFFSET, 0x14,
+    CYRF_39_ANALOG_CTRL,    0x01,
+    CYRF_1E_RX_OVERRIDE,    0x10,
+    CYRF_1F_TX_OVERRIDE,    0x00,
+    CYRF_01_TX_LENGTH,      0x10,
+    CYRF_0F_XACT_CFG,       0x10,
+    CYRF_27_CLK_OVERRIDE,   0x02,
+    CYRF_28_CLK_EN,         0x02,
+    CYRF_0F_XACT_CFG,       0x28
+};
+
 void RFProtocolDevo::init1(void)
 {
     /* Initialise CYRF chip */
@@ -286,26 +308,15 @@ void RFProtocolDevo::init1(void)
     mDev.setCRCSeed(0x0000);
     mDev.setSOPCode_P(SOPCODES[0]);
     setRadioChannels();
-    
-    mDev.writeReg(CYRF_1D_MODE_OVERRIDE, 0x38);
-    mDev.writeReg(CYRF_03_TX_CFG, 0x08 | getRFPower());
-    mDev.writeReg(CYRF_06_RX_CFG, 0x4A);
-    mDev.writeReg(CYRF_0B_PWR_CTRL, 0x00);
-    mDev.writeReg(CYRF_10_FRAMING_CFG, 0xA4);
-    mDev.writeReg(CYRF_11_DATA32_THOLD, 0x05);
-    mDev.writeReg(CYRF_12_DATA64_THOLD, 0x0E);
-    mDev.writeReg(CYRF_1B_TX_OFFSET_LSB, 0x55);
-    mDev.writeReg(CYRF_1C_TX_OFFSET_MSB, 0x05);
-    mDev.writeReg(CYRF_32_AUTO_CAL_TIME, 0x3C);
-    mDev.writeReg(CYRF_35_AUTOCAL_OFFSET, 0x14);
-    mDev.writeReg(CYRF_39_ANALOG_CTRL, 0x01);
-    mDev.writeReg(CYRF_1E_RX_OVERRIDE, 0x10);
-    mDev.writeReg(CYRF_1F_TX_OVERRIDE, 0x00);
-    mDev.writeReg(CYRF_01_TX_LENGTH, 0x10);
-    mDev.writeReg(CYRF_0F_XACT_CFG, 0x10);
-    mDev.writeReg(CYRF_27_CLK_OVERRIDE, 0x02);
-    mDev.writeReg(CYRF_28_CLK_EN, 0x02);
-    mDev.writeReg(CYRF_0F_XACT_CFG, 0x28);
+
+    u8 reg, val;
+    for (u8 i = 0; i < sizeof(TBL_INIT_REGS) / 2; i++) {
+        reg = pgm_read_byte(TBL_INIT_REGS + i * 2);
+        val = pgm_read_byte(TBL_INIT_REGS + i * 2 + 1);
+        if (i == 1)
+            val = val | getRFPower();
+        mDev.writeReg(reg, val);
+    }
 }
 
 void RFProtocolDevo::setRadioChannels(void)
@@ -474,10 +485,6 @@ u16 RFProtocolDevo::callState(void)
     return PACKET_PERIOD_uS;
 }
 
-void RFProtocolDevo::test(s8 id)
-{
-}
-
 int RFProtocolDevo::init(void)
 {
     init1();
@@ -525,11 +532,6 @@ int RFProtocolDevo::close(void)
 int RFProtocolDevo::reset(void)
 {
     return close();
-}
-
-int RFProtocolDevo::getChannels(void)
-{
-    return 6;
 }
 
 int RFProtocolDevo::getInfo(s8 id, u8 *data)

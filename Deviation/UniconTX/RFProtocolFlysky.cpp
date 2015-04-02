@@ -7,7 +7,7 @@
 
 #define PROTO_OPT_WLTOYS        0x01
 
-static const PROGMEM u8 TBL_A7105_REGS[] = {
+static const PROGMEM u8 TBL_INIT_REGS[] = {
      -1,  0x42, 0x00, 0x14, 0x00,  -1 ,  -1 , 0x00, 0x00, 0x00, 0x00, 0x01, 0x21, 0x05, 0x00, 0x50,
     0x9e, 0x4b, 0x00, 0x02, 0x16, 0x2b, 0x12, 0x00, 0x62, 0x80, 0x80, 0x00, 0x0a, 0x32, 0xc3, 0x0f,
     0x13, 0xc3, 0x00,  -1,  0x00, 0x00, 0x3b, 0x00, 0x17, 0x47, 0x80, 0x03, 0x01, 0x45, 0x18, 0x00,
@@ -42,7 +42,7 @@ int RFProtocolFlysky::init1(void)
     mDev.writeID(0x5475c52a);
     u8 reg;
     for (u8 i = 0; i < 0x33; i++) {
-        reg = pgm_read_byte(TBL_A7105_REGS + i);
+        reg = pgm_read_byte(TBL_INIT_REGS + i);
         if((s8)reg != -1)
             mDev.writeReg(i, reg);
     }
@@ -177,13 +177,9 @@ u16 RFProtocolFlysky::callState(void)
     return 1460;
 }
 
-void RFProtocolFlysky::test(s8 id)
-{
-}
-
 int RFProtocolFlysky::init(void)
 {
-    while(1) {
+    while (1) {
         mDev.reset();
         if (init1())
             break;
@@ -212,11 +208,6 @@ int RFProtocolFlysky::close(void)
 int RFProtocolFlysky::reset(void)
 {
     return close();
-}
-
-int RFProtocolFlysky::getChannels(void)
-{
-    return 8;
 }
 
 int RFProtocolFlysky::getInfo(s8 id, u8 *data)

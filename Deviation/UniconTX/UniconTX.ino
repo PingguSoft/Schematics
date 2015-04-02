@@ -60,10 +60,11 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
                             mRFProto = new RFProtocolHiSky(id);
                             break;
 
+#if 0
                         case RFProtocol::PROTO_NRF24L01_CFLIE:
                             mRFProto = new RFProtocolCFlie(id);
                             break;
-                            
+#endif
                         default:
                             ret = 0;
                             break;
@@ -72,8 +73,8 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
                 break;
 
                 case RFProtocol::TX_CYRF6936:
-                    //mRFProto = new RFProtocolDevo(id);
-                    //ret = 1;
+                    mRFProto = new RFProtocolDevo(id);
+                    ret = 1;
                 break;
 
                 case RFProtocol::TX_A7105: {
@@ -101,8 +102,10 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
 
         case SerialProtocol::CMD_START_RF:
             id = *(u32*)data;
+            sz = *(data + 4);
             if (mRFProto) {
                 mRFProto->setControllerID(id);
+                mRFProto->setRFPower(sz);
                 mRFProto->init();
                 ret = 1;
             }
@@ -114,6 +117,14 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
                 mRFProto->close();
                 delete mRFProto;
                 mRFProto = NULL;
+                ret = 1;
+            }
+            mSerial.sendResponse(true, cmd, (u8*)&ret, sizeof(ret));
+            break;
+
+        case SerialProtocol::CMD_SET_RF_POWER:
+            if (mRFProto) {
+                mRFProto->setRFPower(*data);
                 ret = 1;
             }
             mSerial.sendResponse(true, cmd, (u8*)&ret, sizeof(ret));

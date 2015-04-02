@@ -29,6 +29,20 @@ enum {
     DATA_5,
 };
 
+static const PROGMEM u8 TBL_INIT_REGS[] = {
+     A7105_01_MODE_CONTROL,     0x63,
+     A7105_03_FIFOI,            0x0f,
+     A7105_0D_CLOCK,            0x05,
+     A7105_0E_DATA_RATE,        0x04,
+     A7105_15_TX_II,            0x2b,
+     A7105_18_RX,               0x62,
+     A7105_19_RX_GAIN_I,        0x80,
+     A7105_1C_RX_GAIN_IV,       0x0A,
+     A7105_1F_CODE_I,           0x07,
+     A7105_20_CODE_II,          0x17,
+     A7105_29_RX_DEM_TEST_I,    0x47
+};
+
 int RFProtocolHubsan::init1(void)
 {
     u8 if_calibration1;
@@ -37,18 +51,13 @@ int RFProtocolHubsan::init1(void)
     //u8 vco_current;
 
     mDev.writeID(0x55201041);
-    mDev.writeReg(A7105_01_MODE_CONTROL, 0x63);
-    mDev.writeReg(A7105_03_FIFOI, 0x0f);
-    mDev.writeReg(A7105_0D_CLOCK, 0x05);
-    mDev.writeReg(A7105_0E_DATA_RATE, 0x04);
-    mDev.writeReg(A7105_15_TX_II, 0x2b);
-    mDev.writeReg(A7105_18_RX, 0x62);
-    mDev.writeReg(A7105_19_RX_GAIN_I, 0x80);
-    mDev.writeReg(A7105_1C_RX_GAIN_IV, 0x0A);
-    mDev.writeReg(A7105_1F_CODE_I, 0x07);
-    mDev.writeReg(A7105_20_CODE_II, 0x17);
-    mDev.writeReg(A7105_29_RX_DEM_TEST_I, 0x47);
 
+    u8 reg, val;
+    for (u8 i = 0; i < sizeof(TBL_INIT_REGS) / 2; i++) {
+        reg = pgm_read_byte(TBL_INIT_REGS + i * 2);
+        val = pgm_read_byte(TBL_INIT_REGS + i * 2 + 1);
+        mDev.writeReg(reg, val);
+    }
     mDev.strobe(A7105_STANDBY);
 
     //IF Filter Bank Calibration
@@ -341,10 +350,6 @@ u16 RFProtocolHubsan::callState(void)
     return delay;
 }
 
-void RFProtocolHubsan::test(s8 id)
-{
-}
-
 static const PROGMEM u8 ALLOWED_CH[] = {0x14, 0x1e, 0x28, 0x32, 0x3c, 0x46, 0x50, 0x5a, 0x64, 0x6e, 0x78, 0x82};
 
 int RFProtocolHubsan::init(void)
@@ -380,11 +385,6 @@ int RFProtocolHubsan::close(void)
 int RFProtocolHubsan::reset(void)
 {
     return close();
-}
-
-int RFProtocolHubsan::getChannels(void)
-{
-    return 6;
 }
 
 int RFProtocolHubsan::getInfo(s8 id, u8 *data)
