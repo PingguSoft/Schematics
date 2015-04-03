@@ -47,7 +47,6 @@ private:
     u8   mCurRFChan;
     u8   mRFChanCnt;
     u8   mPacketSize;
-    u8   mAuxFlag;
     u8   mState;
 
 protected:
