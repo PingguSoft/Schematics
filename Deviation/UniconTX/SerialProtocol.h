@@ -12,7 +12,7 @@ class SerialProtocol
 
 public:
     typedef enum {
-        CMD_READY,
+        CMD_GET_VERSION,
         CMD_SET_RFPROTOCOL,     // data u32  : (module << 16 | proto << 8 | option)
         CMD_START_RF,
         CMD_STOP_RF,

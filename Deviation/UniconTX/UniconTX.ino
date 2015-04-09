@@ -15,14 +15,13 @@
 #include "RFProtocolFlysky.h"
 #include "SerialProtocol.h"
 
+#define FW_VERSION  0x0100
+
 static SerialProtocol  mSerial;
 static u8 mBaudAckLen;
 static u8 mBaudChkCtr;
 static u8 mBaudAckStr[12];
-
-static RFProtocol      *mRFProto = NULL;
-
-static const PROGMEM char STR_AT[] = "AT";
+static RFProtocol *mRFProto = NULL;
 
 u32 serialCallback(u8 cmd, u8 *data, u8 size)
 {
@@ -33,6 +32,11 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
     u8  sz = 0;
 
     switch (cmd) {
+        case SerialProtocol::CMD_GET_VERSION:
+            ram = FW_VERSION;
+            mSerial.sendResponse(true, cmd, (u8*)&ram, sizeof(ram));
+            break;
+
         case SerialProtocol::CMD_SET_RFPROTOCOL:
             if (mRFProto) {
                 delete mRFProto;
@@ -155,7 +159,7 @@ u32 serialCallback(u8 cmd, u8 *data, u8 size)
             mSerial.clearRX();
             mSerial.clearTX();
             for (u8 i = 0; i < 3; i++) {
-                mSerial.sendString_P(STR_AT);
+                mSerial.sendString_P(PSTR("AT"));
                 delay(1050);
             }
             strncpy_P((char*)mBaudAckStr, PSTR("AT+BAUD"), 7);
@@ -187,7 +191,7 @@ void loop()
         mSerial.begin(57600);
         delay(500);
 
-        mSerial.sendString_P(PSTR("AT+NAMESMART100"));
+        mSerial.sendString_P(PSTR("AT+NAMEUniConTX"));
         delay(1050);
         mBaudAckLen = mSerial.getString(mBaudAckStr);
         mBaudChkCtr++;
